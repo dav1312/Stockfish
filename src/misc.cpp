@@ -1,8 +1,6 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
-  Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2015 Marco Costalba, Joona Kiiski, Tord Romstad
-  Copyright (C) 2015-2020 Marco Costalba, Joona Kiiski, Gary Linscott, Tord Romstad
+  Copyright (C) 2004-2021 The Stockfish developers (see AUTHORS file)
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -56,6 +54,8 @@ typedef bool(*fun3_t)(HANDLE, CONST GROUP_AFFINITY*, PGROUP_AFFINITY);
 #include "thread.h"
 
 using namespace std;
+
+namespace Stockfish {
 
 namespace {
 
@@ -133,7 +133,7 @@ public:
 /// the program was compiled) or "Stockfish <Version>", depending on whether
 /// Version is empty.
 
-const string engine_info(bool to_uci) {
+string engine_info(bool to_uci) {
 
   const string months("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
   string month, day, year;
@@ -147,10 +147,8 @@ const string engine_info(bool to_uci) {
       ss << setw(2) << day << setw(2) << (1 + months.find(month) / 4) << year.substr(2);
   }
 
-  ss << (Is64Bit ? " 64" : "")
-     << (HasPext ? " BMI2" : (HasPopCnt ? " POPCNT" : ""))
-     << (to_uci  ? "\nid author ": " by ")
-     << "T. Romstad, M. Costalba, J. Kiiski, G. Linscott";
+  ss << (to_uci  ? "\nid author ": " by ")
+     << "the Stockfish developers (see AUTHORS file)";
 
   return ss.str();
 }
@@ -158,7 +156,7 @@ const string engine_info(bool to_uci) {
 
 /// compiler_info() returns a string trying to describe the compiler we use
 
-const std::string compiler_info() {
+std::string compiler_info() {
 
   #define stringify2(x) #x
   #define stringify(x) stringify2(x)
@@ -525,3 +523,4 @@ void bindThisThread(size_t idx) {
 #endif
 
 } // namespace WinProcGroup
+} // namespace Stockfish

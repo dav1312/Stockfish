@@ -1,8 +1,6 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
-  Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2015 Marco Costalba, Joona Kiiski, Tord Romstad
-  Copyright (C) 2015-2020 Marco Costalba, Joona Kiiski, Gary Linscott, Tord Romstad
+  Copyright (C) 2004-2021 The Stockfish developers (see AUTHORS file)
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -35,6 +33,8 @@
 #include "syzygy/tbprobe.h"
 
 using namespace std;
+
+namespace Stockfish {
 
 extern vector<string> setup_bench(const Position&, istream&);
 
@@ -263,7 +263,7 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "d")        sync_cout << pos << sync_endl;
       else if (token == "eval")     sync_cout << Eval::trace(pos) << sync_endl;
       else if (token == "compiler") sync_cout << compiler_info() << sync_endl;
-      else
+      else if (!token.empty() && token[0] != '#')
           sync_cout << "Unknown command: " << cmd << sync_endl;
 
   } while (token != "quit" && argc == 1); // Command line args are one-shot
@@ -357,3 +357,5 @@ Move UCI::to_move(const Position& pos, string& str) {
 
   return MOVE_NONE;
 }
+
+} // namespace Stockfish

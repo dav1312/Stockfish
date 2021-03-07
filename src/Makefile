@@ -1,7 +1,5 @@
 # Stockfish, a UCI chess playing engine derived from Glaurung 2.1
-# Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-# Copyright (C) 2008-2015 Marco Costalba, Joona Kiiski, Tord Romstad
-# Copyright (C) 2015-2019 Marco Costalba, Joona Kiiski, Gary Linscott, Tord Romstad
+# Copyright (C) 2004-2021 The Stockfish developers (see AUTHORS file)
 #
 # Stockfish is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,9 +34,9 @@ BINDIR = $(PREFIX)/bin
 PGOBENCH = ./$(EXE) bench
 
 ### Source and object files
-SRCS = benchmark.cpp bitbase.cpp bitboard.cpp endgame.cpp evaluate.cpp main.cpp \
-	material.cpp misc.cpp movegen.cpp movepick.cpp pawns.cpp position.cpp psqt.cpp \
-	search.cpp thread.cpp timeman.cpp tt.cpp uci.cpp ucioption.cpp tune.cpp syzygy/tbprobe.cpp
+SRCS = benchmark.cpp bitboard.cpp evaluate.cpp main.cpp misc.cpp movegen.cpp \
+	movepick.cpp position.cpp search.cpp thread.cpp timeman.cpp tt.cpp \
+	uci.cpp ucioption.cpp tune.cpp syzygy/tbprobe.cpp
 
 OBJS = $(notdir $(SRCS:.cpp=.o))
 
@@ -154,8 +152,8 @@ endif
 ### ==========================================================================
 
 ### 3.1 Selecting compiler (default = gcc)
-CXXFLAGS += -Wall -Wcast-qual -fno-exceptions -std=c++11 $(EXTRACXXFLAGS)
-DEPENDFLAGS += -std=c++11
+CXXFLAGS += -Wall -Wcast-qual -fno-exceptions -std=c++17 $(EXTRACXXFLAGS)
+DEPENDFLAGS += -std=c++17
 LDFLAGS += $(EXTRALDFLAGS)
 
 ifeq ($(COMP),)
@@ -180,6 +178,9 @@ ifeq ($(COMP),gcc)
 	ifneq ($(KERNEL),Darwin)
 	   LDFLAGS += -Wl,--no-as-needed
 	endif
+	
+	gccversion = $(shell $(CXX) --version)
+	gccisclang = $(findstring clang,$(gccversion))
 endif
 
 ifeq ($(COMP),mingw)
@@ -303,6 +304,10 @@ ifeq ($(optimize),yes)
 			CXXFLAGS += -mdynamic-no-pic
 		endif
 	endif
+
+	ifeq ($(comp),clang)
+		CXXFLAGS += -fexperimental-new-pass-manager
+	endif
 endif
 
 ### 3.4 Bits
@@ -344,7 +349,27 @@ endif
 ### needs access to the optimization flags.
 ifeq ($(optimize),yes)
 ifeq ($(debug), no)
-	ifeq ($(comp),$(filter $(comp),gcc clang))
+	ifeq ($(comp),clang)
+		CXXFLAGS += -flto
+		ifneq ($(findstring MINGW,$(KERNEL)),)
+			CXXFLAGS += -fuse-ld=lld
+		else ifneq ($(findstring MSYS,$(KERNEL)),)
+			CXXFLAGS += -fuse-ld=lld
+		endif
+		LDFLAGS += $(CXXFLAGS)
+
+# GCC and CLANG use different methods for parallelizing LTO and CLANG pretends to be
+# GCC on some systems.
+	else ifeq ($(comp),gcc)
+	ifeq ($(gccisclang),)
+		CXXFLAGS += -flto
+		LDFLAGS += $(CXXFLAGS) -flto=jobserver
+		ifneq ($(findstring MINGW,$(KERNEL)),)
+			LDFLAGS += -save-temps
+		else ifneq ($(findstring MSYS,$(KERNEL)),)
+			LDFLAGS += -save-temps
+		endif
+	else
 		CXXFLAGS += -flto
 		LDFLAGS += $(CXXFLAGS)
 	endif
@@ -352,10 +377,10 @@ ifeq ($(debug), no)
 # To use LTO and static linking on windows, the tool chain requires a recent gcc:
 # gcc version 10.1 in msys2 or TDM-GCC version 9.2 are know to work, older might not.
 # So, only enable it for a cross from Linux by default.
-	ifeq ($(comp),mingw)
+	else ifeq ($(comp),mingw)
 	ifeq ($(KERNEL),Linux)
 		CXXFLAGS += -flto
-		LDFLAGS += $(CXXFLAGS)
+		LDFLAGS += $(CXXFLAGS) -flto=jobserver
 	endif
 	endif
 endif
@@ -460,7 +485,7 @@ objclean:
 # clean auxiliary profiling files
 profileclean:
 	@rm -rf profdir
-	@rm -f bench.txt *.gcda *.gcno
+	@rm -f bench.txt *.gcda *.gcno ./syzygy/*.gcda *.s
 	@rm -f stockfish.profdata *.profraw
 
 default:
@@ -508,7 +533,7 @@ config-sanity:
 	@test "$(comp)" = "gcc" || test "$(comp)" = "icc" || test "$(comp)" = "mingw" || test "$(comp)" = "clang"
 
 $(EXE): $(OBJS)
-	$(CXX) -o $@ $(OBJS) $(LDFLAGS)
+	+$(CXX) -o $@ $(OBJS) $(LDFLAGS)
 
 clang-profile-make:
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \

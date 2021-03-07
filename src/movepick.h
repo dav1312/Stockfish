@@ -1,8 +1,6 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
-  Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2015 Marco Costalba, Joona Kiiski, Tord Romstad
-  Copyright (C) 2015-2020 Marco Costalba, Joona Kiiski, Gary Linscott, Tord Romstad
+  Copyright (C) 2004-2021 The Stockfish developers (see AUTHORS file)
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -28,6 +26,8 @@
 #include "movegen.h"
 #include "position.h"
 #include "types.h"
+
+namespace Stockfish {
 
 /// StatsEntry stores the stat table value. It is usually a number but could
 /// be a move or even a nested history. We use a class instead of naked value
@@ -110,9 +110,9 @@ typedef Stats<int16_t, 29952, PIECE_NB, SQUARE_NB> PieceToHistory;
 typedef Stats<PieceToHistory, NOT_USED, PIECE_NB, SQUARE_NB> ContinuationHistory;
 
 
-/// MovePicker class is used to pick one pseudo legal move at a time from the
+/// MovePicker class is used to pick one pseudo-legal move at a time from the
 /// current position. The most important method is next_move(), which returns a
-/// new pseudo legal move each time it is called, until there are no moves left,
+/// new pseudo-legal move each time it is called, until there are no moves left,
 /// when MOVE_NONE is returned. In order to improve the efficiency of the alpha
 /// beta algorithm, MovePicker attempts to return the moves which are most likely
 /// to get a cut-off first.
@@ -157,5 +157,7 @@ private:
   int ply;
   ExtMove moves[MAX_MOVES];
 };
+
+} // namespace Stockfish
 
 #endif // #ifndef MOVEPICK_H_INCLUDED

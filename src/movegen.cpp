@@ -1,8 +1,6 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
-  Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2015 Marco Costalba, Joona Kiiski, Tord Romstad
-  Copyright (C) 2015-2020 Marco Costalba, Joona Kiiski, Gary Linscott, Tord Romstad
+  Copyright (C) 2004-2021 The Stockfish developers (see AUTHORS file)
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,6 +20,8 @@
 
 #include "movegen.h"
 #include "position.h"
+
+namespace Stockfish {
 
 namespace {
 
@@ -87,7 +87,7 @@ namespace {
 
             // Add pawn pushes which give discovered check. This is possible only
             // if the pawn is not on the same file as the enemy king, because we
-            // don't generate captures. Note that a possible discovery check
+            // don't generate captures. Note that a possible discovered check
             // promotion has been already generated amongst the captures.
             Bitboard dcCandidateQuiets = pos.blockers_for_king(Them) & pawnsNotOn7;
             if (dcCandidateQuiets)
@@ -136,7 +136,7 @@ namespace {
             moveList = make_promotions<Type, Up     >(moveList, pop_lsb(&b3), ksq);
     }
 
-    // Standard and en-passant captures
+    // Standard and en passant captures
     if (Type == CAPTURES || Type == EVASIONS || Type == NON_EVASIONS)
     {
         Bitboard b1 = shift<UpRight>(pawnsNotOn7) & enemies;
@@ -169,7 +169,7 @@ namespace {
             assert(b1);
 
             while (b1)
-                *moveList++ = make<ENPASSANT>(pop_lsb(&b1), pos.ep_square());
+                *moveList++ = make<EN_PASSANT>(pop_lsb(&b1), pos.ep_square());
         }
     }
 
@@ -182,10 +182,11 @@ namespace {
 
     static_assert(Pt != KING && Pt != PAWN, "Unsupported piece type in generate_moves()");
 
-    const Square* pl = pos.squares<Pt>(Us);
+    Bitboard bb = pos.pieces(Us, Pt);
 
-    for (Square from = *pl; from != SQ_NONE; from = *++pl)
-    {
+    while (bb) {
+        Square from = pop_lsb(&bb);
+
         if (Checks)
         {
             if (    (Pt == BISHOP || Pt == ROOK || Pt == QUEEN)
@@ -224,11 +225,8 @@ namespace {
             target = ~pos.pieces();
             break;
         case EVASIONS:
-        {
-            Square checksq = lsb(pos.checkers());
-            target = between_bb(pos.square<KING>(Us), checksq) | checksq;
+            target = between_bb(pos.square<KING>(Us), lsb(pos.checkers())) | pos.checkers();
             break;
-        }
         case NON_EVASIONS:
             target = ~pos.pieces(Us);
             break;
@@ -359,7 +357,7 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
   moveList = pos.checkers() ? generate<EVASIONS    >(pos, moveList)
                             : generate<NON_EVASIONS>(pos, moveList);
   while (cur != moveList)
-      if (   (pinned || from_sq(*cur) == ksq || type_of(*cur) == ENPASSANT)
+      if (  ((pinned && pinned & from_sq(*cur)) || from_sq(*cur) == ksq || type_of(*cur) == EN_PASSANT)
           && !pos.legal(*cur))
           *cur = (--moveList)->move;
       else
@@ -367,3 +365,5 @@ ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
 
   return moveList;
 }
+
+} // namespace Stockfish

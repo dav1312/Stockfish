@@ -1,8 +1,6 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
-  Copyright (C) 2004-2008 Tord Romstad (Glaurung author)
-  Copyright (C) 2008-2015 Marco Costalba, Joona Kiiski, Tord Romstad
-  Copyright (C) 2015-2020 Marco Costalba, Joona Kiiski, Gary Linscott, Tord Romstad
+  Copyright (C) 2004-2021 The Stockfish developers (see AUTHORS file)
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -29,8 +27,10 @@
 
 #include "types.h"
 
-const std::string engine_info(bool to_uci = false);
-const std::string compiler_info();
+namespace Stockfish {
+
+std::string engine_info(bool to_uci = false);
+std::string compiler_info();
 void prefetch(void* addr);
 void start_logger(const std::string& fname);
 void* aligned_ttmem_alloc(size_t size, void*& mem);
@@ -133,5 +133,7 @@ inline uint64_t mul_hi64(uint64_t a, uint64_t b) {
 namespace WinProcGroup {
   void bindThisThread(size_t idx);
 }
+
+} // namespace Stockfish
 
 #endif // #ifndef MISC_H_INCLUDED
