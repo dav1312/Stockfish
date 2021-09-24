@@ -1,10 +1,14 @@
-name: build
+name: build popcnt
 
 on:
   push:
-    branches: [ master ]
+    branches: 
+      - master
+      - workflow-windows-releases
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - workflow-windows-releases
 
 jobs:
   build:
