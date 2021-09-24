@@ -18,10 +18,10 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: install
-        run: sudo apt install mingw-w64
+        run: sudo apt update && sudo apt install build-essential
 
       - name: make modern
-        run: cd src && make clean && make -j build COMP=mingw ARCH=x86-64-modern EXE=stockfish_x64_modern.exe && strip stockfish_x64_modern.exe
+        run: cd src && make clean && make -j build COMP=gcc ARCH=x86-64-modern EXE=stockfish_x64_modern.exe && strip stockfish_x64_modern.exe
 
       - uses: actions/upload-artifact@v2
         with:
