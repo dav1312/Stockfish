@@ -1094,6 +1094,7 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   if (complexity && useClassical)
       *complexity = abs(v - psq);
 
+  std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
   return v;
 }
 
