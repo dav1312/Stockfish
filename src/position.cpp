@@ -681,7 +681,7 @@ bool Position::gives_check(Move m) const {
 /// to a StateInfo object. The move is assumed to be legal. Pseudo-legal
 /// moves should be filtered out before this function is called.
 
-void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
+void Position::do_move(Move m, StateInfo& newSt, bool givesCheck, std::ofstream& fileGraph) {
 
   assert(is_ok(m));
   assert(&newSt != st);
@@ -870,11 +870,12 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   // Update king attacks used for fast check detection
   set_check_info(st);
-
-  std::cout << "xxx " << st->previous->key << " -> " << st->key << "[label=" << UCI::move(m, false) << "]" << std::endl;
+  fileGraph << st->previous->key << " -> " << st->key << "[label=" << UCI::move(m, false) << "]" << std::endl;
+//   std::cout << "xxx " << st->previous->key << " -> " << st->key << "[label=" << UCI::move(m, false) << "]" << std::endl;
   if (checkers())
   {
-     std::cout << "xxx " << st->key << "[label=chk,shape=" << (side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+      fileGraph << st->key << "[label=chk,shape=" << (side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+    //  std::cout << "xxx " << st->key << "[label=chk,shape=" << (side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
   }
 
   // Calculate the repetition info. It is the ply distance from the previous
@@ -998,7 +999,7 @@ void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Squ
 /// Position::do_null_move() is used to do a "null move": it flips
 /// the side to move without executing any move on the board.
 
-void Position::do_null_move(StateInfo& newSt) {
+void Position::do_null_move(StateInfo& newSt, std::ofstream& fileGraph) {
 
   assert(!checkers());
   assert(&newSt != st);
@@ -1029,7 +1030,8 @@ void Position::do_null_move(StateInfo& newSt) {
 
   set_check_info(st);
   
-  std::cout << "xxx " << st->previous->key << " -> " << st->key << "[color=blue,fontcolor=blue,label=null]" << std::endl;
+  fileGraph << st->previous->key << " -> " << st->key << "[color=blue,fontcolor=blue,label=null]" << std::endl;
+//   std::cout << "xxx " << st->previous->key << " -> " << st->key << "[color=blue,fontcolor=blue,label=null]" << std::endl;
   st->repetition = 0;
 
   assert(pos_is_ok());

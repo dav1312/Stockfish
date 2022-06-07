@@ -128,7 +128,6 @@ namespace {
   template<bool Root>
   uint64_t perft(Position& pos, Depth depth) {
 
-    StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
     uint64_t cnt, nodes = 0;
@@ -140,10 +139,10 @@ namespace {
             cnt = 1, nodes++;
         else
         {
-            pos.do_move(m, st);
+            // pos.do_move(m, st, fileGraph);
             cnt = leaf ? MoveList<LEGAL>(pos).size() : perft<false>(pos, depth - 1);
             nodes += cnt;
-            pos.undo_move(m);
+            // pos.undo_move(m);
         }
         if (Root)
             sync_cout << UCI::move(m, pos.is_chess960()) << ": " << cnt << sync_endl;
@@ -178,9 +177,10 @@ void Search::clear() {
 
 /// MainThread::search() is started when the program receives the UCI 'go'
 /// command. It searches from the root position and outputs the "bestmove".
+std::ofstream fileGraph;
 
 void MainThread::search() {
-
+  fileGraph.open("t");
   if (Limits.perft)
   {
       nodes = perft<true>(rootPos, Limits.perft);
@@ -206,7 +206,7 @@ void MainThread::search() {
       Threads.start_searching(); // start non-main threads
       Thread::search();          // main thread start searching
   }
-
+  fileGraph.close();
   // When we reach the maximum depth, we can arrive here without a raise of
   // Threads.stop. However, if we are pondering or in an infinite search,
   // the UCI protocol states that we shouldn't print the best move before the
@@ -255,6 +255,7 @@ void MainThread::search() {
       std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
 
   std::cout << sync_endl;
+  
 }
 
 
@@ -582,7 +583,7 @@ namespace {
         if (   Threads.stop.load(std::memory_order_relaxed)
             || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
-            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos)
+            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, fileGraph)
                                                         : value_draw(pos.this_thread());
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -733,7 +734,7 @@ namespace {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
-            ss->staticEval = eval = evaluate(pos, &complexity);
+            ss->staticEval = eval = evaluate(pos, fileGraph, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
 
@@ -744,7 +745,7 @@ namespace {
     }
     else
     {
-        ss->staticEval = eval = evaluate(pos, &complexity);
+        ss->staticEval = eval = evaluate(pos, fileGraph, &complexity);
 
         // Save static evaluation into transposition table
         if (!excludedMove)
@@ -807,7 +808,7 @@ namespace {
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
-        pos.do_null_move(st);
+        pos.do_null_move(st, fileGraph);
 
         Value nullValue = -search<NonPV>(pos, ss+1, -beta, -beta+1, depth-R, !cutNode);
 
@@ -870,7 +871,7 @@ namespace {
                                                                           [pos.moved_piece(move)]
                                                                           [to_sq(move)];
 
-                pos.do_move(move, st);
+                pos.do_move(move, st, fileGraph);
 
                 // Perform a preliminary qsearch to verify that the move holds
                 value = -qsearch<NonPV>(pos, ss+1, -probCutBeta, -probCutBeta+1);
@@ -1121,7 +1122,7 @@ moves_loop: // When in check, search starts here
                                                                 [to_sq(move)];
 
       // Step 16. Make the move
-      pos.do_move(move, st, givesCheck);
+      pos.do_move(move, st, givesCheck, fileGraph);
 
       Depth r = reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
 
@@ -1429,7 +1430,7 @@ moves_loop: // When in check, search starts here
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
-        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos) : VALUE_DRAW;
+        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, fileGraph) : VALUE_DRAW;
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1464,7 +1465,7 @@ moves_loop: // When in check, search starts here
         {
             // Never assume anything about values stored in TT
             if ((ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
-                ss->staticEval = bestValue = evaluate(pos);
+                ss->staticEval = bestValue = evaluate(pos, fileGraph);
 
             // ttValue can be used as a better position evaluation (~13 Elo)
             if (    ttValue != VALUE_NONE
@@ -1475,11 +1476,13 @@ moves_loop: // When in check, search starts here
         {
             // In case of null move search use previous static eval with a different sign
             ss->staticEval = bestValue =
-            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
+            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, fileGraph)
                                              : -(ss-1)->staticEval;
             
             if ((ss-1)->currentMove == MOVE_NULL) 
-               std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? ss->staticEval : -ss->staticEval) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+                fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? ss->staticEval : -ss->staticEval) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+            
+            //    std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? ss->staticEval : -ss->staticEval) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
         }
 
         // Stand pat. Return immediately if static value is at least beta
@@ -1584,7 +1587,7 @@ moves_loop: // When in check, search starts here
       quietCheckEvasions += !capture && ss->inCheck;
 
       // Make and search the move
-      pos.do_move(move, st, givesCheck);
+      pos.do_move(move, st, givesCheck, fileGraph);
       value = -qsearch<nodeType>(pos, ss+1, -beta, -alpha, depth - 1);
       pos.undo_move(move);
 
@@ -1778,9 +1781,10 @@ moves_loop: // When in check, search starts here
 
     for (size_t i = 0; i < pv.size(); ++i) {
         Key prevKey = pos.key();
-        pos.do_move(pv[i], st[i]);
+        pos.do_move(pv[i], st[i], fileGraph);
         Key nextKey = pos.key();
-        std::cout << "xxx " << prevKey << " -> " << nextKey << "[color=red,penwidth=3.0,fontcolor=red,label=" << UCI::move(pv[i], false) << "]" << std::endl;
+        fileGraph << prevKey << " -> " << nextKey << "[color=red,penwidth=3.0,fontcolor=red,label=" << UCI::move(pv[i], false) << "]" << std::endl;
+        // std::cout << "xxx " << prevKey << " -> " << nextKey << "[color=red,penwidth=3.0,fontcolor=red,label=" << UCI::move(pv[i], false) << "]" << std::endl;
     }
 
     bool isDraw = pos.is_draw(pv.size());
@@ -1936,7 +1940,7 @@ bool RootMove::extract_ponder_from_tt(Position& pos) {
     if (pv[0] == MOVE_NONE)
         return false;
 
-    pos.do_move(pv[0], st);
+    pos.do_move(pv[0], st, fileGraph);
     TTEntry* tte = TT.probe(pos.key(), ttHit);
 
     if (ttHit)

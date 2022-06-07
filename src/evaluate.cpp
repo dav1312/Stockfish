@@ -1048,7 +1048,7 @@ make_v:
 /// evaluate() is the evaluator for the outer world. It returns a static
 /// evaluation of the position from the point of view of the side to move.
 
-Value Eval::evaluate(const Position& pos, int* complexity) {
+Value Eval::evaluate(const Position& pos, std::ofstream& fileGraph, int* complexity) {
 
   Value v;
   Value psq = pos.psq_eg_stm();
@@ -1094,7 +1094,10 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   if (complexity && useClassical)
       *complexity = abs(v - psq);
 
-  std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+  //std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+  fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+  
+//   std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
   return v;
 }
 
@@ -1158,14 +1161,15 @@ std::string Eval::trace(Position& pos) {
       v = pos.side_to_move() == WHITE ? v : -v;
       ss << "NNUE evaluation        " << to_cp(v) << " (white side)\n";
   }
-
-  v = evaluate(pos);
+  std::ofstream fileGraph;
+  fileGraph.open("t");
+  v = evaluate(pos, fileGraph);
   v = pos.side_to_move() == WHITE ? v : -v;
   ss << "Final evaluation       " << to_cp(v) << " (white side)";
   if (Eval::useNNUE)
      ss << " [with scaled NNUE, hybrid, ...]";
   ss << "\n";
-
+  fileGraph.close();
   return ss.str();
 }
 

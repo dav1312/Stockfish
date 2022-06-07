@@ -33,7 +33,9 @@ using namespace Stockfish;
 int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
-
+  std::ofstream fileGraph;
+  fileGraph.open("t");
+ 
   CommandLine::init(argc, argv);
   UCI::init(Options);
   Tune::init();
@@ -47,7 +49,7 @@ int main(int argc, char* argv[]) {
   Eval::NNUE::init();
 
   UCI::loop(argc, argv);
-
+  fileGraph.close();
   Threads.set(0);
   return 0;
 }
