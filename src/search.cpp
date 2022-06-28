@@ -540,7 +540,11 @@ namespace {
 
     if (   alpha > VALUE_DRAW
         && pos.state()->repetition)
-        return alpha;
+    {
+        Value v = pos.state()->repValue;
+        if (v != VALUE_NONE)
+            return v;
+    }
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
@@ -1131,7 +1135,7 @@ moves_loop: // When in check, search starts here
                                                                 [to_sq(move)];
 
       // Step 16. Make the move
-      pos.do_move(move, st, givesCheck);
+      pos.do_move(move, st, givesCheck, bestValue);
 
       bool doDeeperSearch = false;
 
@@ -1572,7 +1576,7 @@ moves_loop: // When in check, search starts here
       quietCheckEvasions += !capture && ss->inCheck;
 
       // Make and search the move
-      pos.do_move(move, st, givesCheck);
+      pos.do_move(move, st, givesCheck, bestValue);
       value = -qsearch<nodeType>(pos, ss+1, -beta, -alpha, depth - 1);
       pos.undo_move(move);
 

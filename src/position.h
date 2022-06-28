@@ -47,6 +47,7 @@ struct StateInfo {
   int    rule50;
   int    pliesFromNull;
   Square epSquare;
+  Value  repValue;
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -137,7 +138,7 @@ public:
 
   // Doing and undoing moves
   void do_move(Move m, StateInfo& newSt);
-  void do_move(Move m, StateInfo& newSt, bool givesCheck);
+  void do_move(Move m, StateInfo& newSt, bool givesCheck, Value value = VALUE_NONE);
   void undo_move(Move m);
   void do_null_move(StateInfo& newSt);
   void undo_null_move();

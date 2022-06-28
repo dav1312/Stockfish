@@ -680,7 +680,7 @@ bool Position::gives_check(Move m) const {
 /// to a StateInfo object. The move is assumed to be legal. Pseudo-legal
 /// moves should be filtered out before this function is called.
 
-void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
+void Position::do_move(Move m, StateInfo& newSt, bool givesCheck, Value value) {
 
   assert(is_ok(m));
   assert(&newSt != st);
@@ -884,6 +884,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           if (stp->key == st->key)
           {
               st->repetition = stp->repetition ? -i : i;
+              st->repValue = value;
               break;
           }
       }
