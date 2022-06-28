@@ -538,6 +538,10 @@ namespace {
             return alpha;
     }
 
+    if (   alpha > VALUE_DRAW
+        && pos.state()->repetition)
+        return alpha;
+
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
         return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta);
