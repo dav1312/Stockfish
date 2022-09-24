@@ -870,25 +870,6 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update king attacks used for fast check detection
   set_check_info(st);
 
-  // Calculate the repetition info. It is the ply distance from the previous
-  // occurrence of the same position, negative in the 3-fold case, or zero
-  // if the position was not repeated.
-  st->repetition = 0;
-  int end = std::min(st->rule50, st->pliesFromNull);
-  if (end >= 4)
-  {
-      StateInfo* stp = st->previous->previous;
-      for (int i = 4; i <= end; i += 2)
-      {
-          stp = stp->previous->previous;
-          if (stp->key == st->key)
-          {
-              st->repetition = stp->repetition ? -i : i;
-              break;
-          }
-      }
-  }
-
   assert(pos_is_ok());
 }
 
@@ -1022,8 +1003,6 @@ void Position::do_null_move(StateInfo& newSt) {
 
   set_check_info(st);
 
-  st->repetition = 0;
-
   assert(pos_is_ok());
 }
 
@@ -1074,9 +1053,16 @@ bool Position::see_ge(Move m, Value threshold) const {
       return VALUE_ZERO >= threshold;
 
   Square from = from_sq(m), to = to_sq(m);
+  PieceType nextVictim = type_of(piece_on(from));
+  Color us = color_of(piece_on(from));
+  Color stm = ~us; // First consider opponent's move
+  Value balance;   // Values of the pieces taken by us minus opponent's ones
 
-  int swap = PieceValue[MG][piece_on(to)] - threshold;
-  if (swap < 0)
+  // The opponent may be able to recapture so this is the best result
+  // we can hope for.
+  balance = PieceValue[MG][piece_on(to)] - threshold;
+
+  if (balance < VALUE_ZERO)
       return false;
 
   swap = PieceValue[MG][piece_on(from)] - swap;
@@ -1092,24 +1078,16 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   while (true)
   {
-      stm = ~stm;
-      attackers &= occupied;
+      stmAttackers = attackers & pieces(stm);
+
+      // Don't allow pinned pieces to attack (except the king) as long as
+      // any pinners are on their original square.
+      if (st->pinners[~stm] & occupied)
+          stmAttackers &= ~st->blockersForKing[stm];
 
       // If stm has no more attackers then give up: stm loses
-      if (!(stmAttackers = attackers & pieces(stm)))
+      if (!stmAttackers)
           break;
-
-      // Don't allow pinned pieces to attack as long as there are
-      // pinners on their original square.
-      if (pinners(~stm) & occupied)
-      {
-          stmAttackers &= ~blockers_for_king(stm);
-
-          if (!stmAttackers)
-              break;
-      }
-
-      res ^= 1;
 
       // Locate and remove the next least valuable attacker, and add to
       // the bitboard 'attackers' any X-ray attackers behind it.
@@ -1176,9 +1154,26 @@ bool Position::is_draw(int ply) const {
   if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
       return true;
 
-  // Return a draw score if a position repeats once earlier but strictly
-  // after the root, or repeats twice before or at the root.
-  return st->repetition && st->repetition < ply;
+  int end = std::min(st->rule50, st->pliesFromNull);
+
+  if (end < 4)
+    return false;
+
+  StateInfo* stp = st->previous->previous;
+  int cnt = 0;
+
+  for (int i = 4; i <= end; i += 2)
+  {
+      stp = stp->previous->previous;
+
+      // Return a draw score if a position repeats once earlier but strictly
+      // after the root, or repeats twice before or at the root.
+      if (   stp->key == st->key
+          && ++cnt + (ply > i) == 2)
+          return true;
+  }
+
+  return false;
 }
 
 
@@ -1188,15 +1183,26 @@ bool Position::is_draw(int ply) const {
 bool Position::has_repeated() const {
 
     StateInfo* stc = st;
-    int end = std::min(st->rule50, st->pliesFromNull);
-    while (end-- >= 4)
+    while (true)
     {
-        if (stc->repetition)
-            return true;
+        int i = 4, end = std::min(stc->rule50, stc->pliesFromNull);
+
+        if (end < i)
+            return false;
+
+        StateInfo* stp = stc->previous->previous;
+
+        do {
+            stp = stp->previous->previous;
+
+            if (stp->key == stc->key)
+                return true;
+
+            i += 2;
+        } while (i <= end);
 
         stc = stc->previous;
     }
-    return false;
 }
 
 
@@ -1240,8 +1246,13 @@ bool Position::has_game_cycle(int ply) const {
                   continue;
 
               // For repetitions before or at the root, require one more
-              if (stp->repetition)
-                  return true;
+              StateInfo* next_stp = stp;
+              for (int k = i + 2; k <= end; k += 2)
+              {
+                  next_stp = next_stp->previous->previous;
+                  if (next_stp->key == stp->key)
+                     return true;
+              }
           }
       }
   }
