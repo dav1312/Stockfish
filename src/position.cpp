@@ -875,10 +875,10 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // if the position was not repeated.
   st->repetition = 0;
   int end = std::min(st->rule50, st->pliesFromNull);
-  if (end >= 4)
+  if (end >= 2)
   {
       StateInfo* stp = st->previous->previous;
-      for (int i = 4; i <= end; i += 2)
+      for (int i = 2; i <= end; i += 2)
       {
           stp = stp->previous->previous;
           if (stp->key == st->key)
@@ -1189,7 +1189,7 @@ bool Position::has_repeated() const {
 
     StateInfo* stc = st;
     int end = std::min(st->rule50, st->pliesFromNull);
-    while (end-- >= 4)
+    while (end-- >= 2)
     {
         if (stc->repetition)
             return true;
@@ -1209,13 +1209,13 @@ bool Position::has_game_cycle(int ply) const {
 
   int end = std::min(st->rule50, st->pliesFromNull);
 
-  if (end < 3)
+  if (end < 2)
     return false;
 
   Key originalKey = st->key;
   StateInfo* stp = st->previous;
 
-  for (int i = 3; i <= end; i += 2)
+  for (int i = 2; i <= end; i += 2)
   {
       stp = stp->previous->previous;
 
