@@ -873,7 +873,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Calculate the repetition info. It is the ply distance from the previous
   // occurrence of the same position, negative in the 3-fold case, or zero
   // if the position was not repeated.
-  st->repetition = 0;
+  st->repetition = 1;
   int end = std::min(st->rule50, st->pliesFromNull);
   if (end >= 4)
   {
@@ -1022,7 +1022,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
   set_check_info(st);
 
-  st->repetition = 0;
+  st->repetition = 1;
 
   assert(pos_is_ok());
 }
