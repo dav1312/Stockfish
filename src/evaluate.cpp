@@ -1084,7 +1084,7 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
       v = (nnue * scale + optimism * (scale - 754)) / 1024;
   }
 
-  sync_cout << "info string Classical usage: " << classicalUse << " / " (nnueUse + classicalUse) << sync_endl;
+  sync_cout << "info string Classical usage: " << classicalUse << " / " << (nnueUse + classicalUse) << sync_endl;
 
   // Damp down the evaluation linearly when shuffling
   v = v * (195 - pos.rule50_count()) / 211;
