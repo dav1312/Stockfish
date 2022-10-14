@@ -1044,6 +1044,8 @@ make_v:
 
 } // namespace Eval
 
+int classicalUse = 0;
+int nnueUse = 0;
 
 /// evaluate() is the evaluator for the outer world. It returns a static
 /// evaluation of the position from the point of view of the side to move.
@@ -1061,11 +1063,13 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   if (useClassical)
   {
       v = Evaluation<NO_TRACE>(pos).value();
-      sync_cout << "info string classical evaluation enabled" << sync_endl;
+      // sync_cout << "info string classical evaluation enabled" << sync_endl;
+      ++classicalUse;
   }
   else
   {
-      sync_cout << "info string NNUE evaluation enabled" << sync_endl;
+      // sync_cout << "info string NNUE evaluation enabled" << sync_endl;
+      ++nnueUse;
       int nnueComplexity;
       int scale = 1064 + 106 * pos.non_pawn_material() / 5120;
       Value optimism = pos.this_thread()->optimism[stm];
@@ -1079,6 +1083,8 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
       optimism = optimism * (269 + nnueComplexity) / 256;
       v = (nnue * scale + optimism * (scale - 754)) / 1024;
   }
+
+  sync_cout << "info string Classical usage: " << classicalUse << " / " (nnueUse + classicalUse) << sync_endl;
 
   // Damp down the evaluation linearly when shuffling
   v = v * (195 - pos.rule50_count()) / 211;
