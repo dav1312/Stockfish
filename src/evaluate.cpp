@@ -1059,9 +1059,13 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   // PSQ advantage is decisive and several pieces remain (~3 Elo)
   bool useClassical = !useNNUE || (pos.count<ALL_PIECES>() > 7 && abs(psq) > 1760);
   if (useClassical)
+  {
       v = Evaluation<NO_TRACE>(pos).value();
+      sync_cout << "info string classical evaluation enabled" << sync_endl;
+  }
   else
   {
+      sync_cout << "info string NNUE evaluation enabled" << sync_endl;
       int nnueComplexity;
       int scale = 1064 + 106 * pos.non_pawn_material() / 5120;
       Value optimism = pos.this_thread()->optimism[stm];
