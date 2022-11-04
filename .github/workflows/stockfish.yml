@@ -158,13 +158,14 @@ jobs:
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat ../git_commit)
-          elif [ "$RUNNER_OS" == "Windows" ]; then
+          if [ "$RUNNER_OS" == "Windows" ]; then
             make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat ../git_commit).exe
+          else
+            make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat ../git_commit)
           fi
           ../tests/signature.sh $benchref
           mv stockfish_$(cat ../git_commit) ..
+          make clean
 
       - uses: actions/upload-artifact@v3
         with:
