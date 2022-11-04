@@ -162,6 +162,7 @@ jobs:
             make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat git_commit)
           elif [ "$RUNNER_OS" == "Windows" ]; then
             make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat git_commit).exe
+          fi
           ../tests/signature.sh $benchref
           mv stockfish_$(cat git_commit) ..
 
