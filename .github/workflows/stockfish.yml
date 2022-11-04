@@ -213,6 +213,7 @@ jobs:
       - name: Test x86-64-modern build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
+          export CXXFLAGS=""
           make clean
           make -j2 ARCH=x86-64-modern build sha=$git_sha
           ../tests/signature.sh $benchref
