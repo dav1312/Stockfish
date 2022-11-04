@@ -167,10 +167,14 @@ jobs:
             mv stockfish ../stockfish_$(cat git_commit)
           fi
           make clean
-          rm nn-*.nnue
-          rm git_commit
 
       - uses: actions/upload-artifact@v3
         with:
           name: stockfish_x86-64-modern
-          path: ./*
+          path: |
+            AUTHORS
+            Copying.txt
+            src/*
+            !src/nn-*.nnue
+            !src/git_commit
+            stockfish_*
