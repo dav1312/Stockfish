@@ -171,7 +171,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: stockfish_x86-64-modern
-          path:
-            - AUTHORS
-            - Copying.txt
-            - stockfish_$(cat ../git_commit)
+          path: |
+            'AUTHORS'
+            'Copying.txt'
+            'stockfish_$(cat ../git_commit)'
