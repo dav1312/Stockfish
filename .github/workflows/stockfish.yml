@@ -160,12 +160,14 @@ jobs:
           make clean
           make -j2 ARCH=x86-64-modern build
           ../tests/signature.sh $benchref
+          git show --no-patch --no-notes --pretty='%cs-%h' HEAD > git_commit
           if [ "$RUNNER_OS" == "Windows" ]; then
-            mv stockfish.exe ../stockfish_$(cat ../git_commit).exe
+            mv stockfish.exe ../stockfish_$(cat git_commit).exe
           else
-            mv stockfish ../stockfish_$(cat ../git_commit)
+            mv stockfish ../stockfish_$(cat git_commit)
           fi
           make clean
+          rm git_commit
           rm nn-*.nnue
 
       - uses: actions/upload-artifact@v3
