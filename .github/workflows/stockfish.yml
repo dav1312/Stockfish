@@ -175,7 +175,7 @@ jobs:
           mv ./stockfish${{matrix.config.ext}} ../stockfish-x86-32${{matrix.config.ext}}
 
       - uses: actions/upload-artifact@v3
-        if: ${{ !matrix.config.comp == clang }}
+        if: ${{ !matrix.config.comp == 'clang' }}
         with:
           name: ${{matrix.config.name}}-x86-32
           path: |
