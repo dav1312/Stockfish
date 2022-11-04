@@ -150,6 +150,8 @@ jobs:
       - name: Create binary folder
         run: |
           mkdir ./binaries
+          touch test.txt
+          mv test.txt ./binaries/stockfish-x86-64-wtf.exe
 
       - name: Check compiler
         run: |
