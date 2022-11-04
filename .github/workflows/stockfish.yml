@@ -219,6 +219,7 @@ jobs:
           make -j2 ARCH=x86-64-modern build sha=$git_sha
           pwd
           ls
+          ls ./binaries
           ../tests/signature.sh $benchref
           mv ./stockfish* ./binaries/stockfish-x86-64-modern${{matrix.config.ext}}
 
