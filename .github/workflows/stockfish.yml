@@ -158,12 +158,13 @@ jobs:
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat ../git_commit).exe
-          else
-            make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat ../git_commit)
-          fi
+          make -j2 ARCH=x86-64-modern build
           ../tests/signature.sh $benchref
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            mv stockfish.exe stockfish_$(cat ../git_commit).exe
+          else
+            mv stockfish stockfish_$(cat ../git_commit)
+          fi
           mv stockfish_$(cat ../git_commit) ..
           make clean
           rm nn-*.nnue
@@ -174,4 +175,4 @@ jobs:
           path: |
             'AUTHORS'
             'Copying.txt'
-            'stockfish_$(cat ../git_commit)'
+            'stockfish_$(cat ../git_commit)*'
