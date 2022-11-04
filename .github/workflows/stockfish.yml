@@ -167,8 +167,8 @@ jobs:
             mv stockfish ../stockfish_$(cat git_commit)
           fi
           make clean
-          rm git_commit
           rm nn-*.nnue
+          rm git_commit
 
       - uses: actions/upload-artifact@v3
         with:
