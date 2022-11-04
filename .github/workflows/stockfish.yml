@@ -117,11 +117,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: stockfish
-          path: src/stockfish*
-
       - name: Download required linux packages
         if: runner.os == 'Linux'
         run: |
@@ -353,3 +348,8 @@ jobs:
           make clean
           make -j2 ARCH=x86-64-modern sanitize=thread optimize=no debug=yes build > /dev/null
           ../tests/instrumented.sh --sanitizer-thread
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: stockfish
+          path: src/stockfish*
