@@ -1,14 +1,8 @@
 name: Stockfish
 on:
   push:
-    branches:
-      - master
-      - tools
-      - github_ci
   pull_request:
-    branches:
-      - master
-      - tools
+
 jobs:
   Stockfish:
     name: ${{ matrix.config.name }}
@@ -85,7 +79,8 @@ jobs:
               run_64bit_tests: true,
               msys_sys: 'mingw64',
               msys_env: 'x86_64-gcc',
-              shell: 'msys2 {0}'
+              shell: 'msys2 {0}',
+              ext: '.exe'
             }
           - {
               name: "Windows 2022 Mingw-w64 GCC i686",
@@ -95,7 +90,8 @@ jobs:
               run_32bit_tests: false,
               msys_sys: 'mingw32',
               msys_env: 'i686-gcc',
-              shell: 'msys2 {0}'
+              shell: 'msys2 {0}',
+              ext: '.exe'
             }
           - {
               name: "Windows 2022 Mingw-w64 Clang x86_64",
@@ -105,7 +101,8 @@ jobs:
               run_64bit_tests: false,
               msys_sys: 'clang64',
               msys_env: 'clang-x86_64-clang',
-              shell: 'msys2 {0}'
+              shell: 'msys2 {0}',
+              ext: '.exe'
             }
 
     defaults:
@@ -143,6 +140,10 @@ jobs:
         run: |
           git show --no-patch --no-notes --pretty='%cs-%h' HEAD > git_commit
 
+      - name: Extract the commit info from the commit history
+        run: |
+          git show --no-patch --no-notes --pretty='%cs-%h' HEAD > git_commit
+
       - name: Check compiler
         run: |
           export PATH=$PATH:$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
@@ -160,12 +161,7 @@ jobs:
           make clean
           make -j2 ARCH=x86-64-modern build
           ../tests/signature.sh $benchref
-          git show --no-patch --no-notes --pretty='%cs-%h' HEAD > git_commit
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            mv stockfish.exe ../stockfish_$(cat git_commit).exe
-          else
-            mv stockfish ../stockfish_$(cat git_commit)
-          fi
+          mv stockfish${{ matrix.config.ext }} ../stockfish_$(cat git_commit)${{ matrix.config.ext }}
           make clean
 
       - uses: actions/upload-artifact@v3
