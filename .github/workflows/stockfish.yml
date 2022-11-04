@@ -139,6 +139,10 @@ jobs:
           git log HEAD | grep "\b[Bb]ench[ :]\+[0-9]\{7\}" | head -n 1 | sed "s/[^0-9]*\([0-9]*\).*/\1/g" > git_sig
           [ -s git_sig ] && echo "benchref=$(cat git_sig)" >> $GITHUB_ENV && echo "Reference bench:" $(cat git_sig) || echo "No bench found"
 
+      - name: Extract the commit info from the commit history
+        run: |
+          git show --no-patch --no-notes --pretty='%cs-%h' HEAD > git_commit
+
       - name: Check compiler
         run: |
           export PATH=$PATH:$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
@@ -154,24 +158,14 @@ jobs:
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-modern build
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat git_commit)
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            make -j2 ARCH=x86-64-modern build EXE=stockfish_$(cat git_commit).exe
           ../tests/signature.sh $benchref
-          mv stockfish* ..
-      
-      - uses: actions/upload-artifact@v2
+          mv stockfish_$(cat git_commit) ..
+
+      - uses: actions/upload-artifact@v3
         with:
           name: stockfish_x86-64-modern
           path: ./*
-
-      - name: Test x86-64-ssse3 build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-ssse3 build
-          ../tests/signature.sh $benchref
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: stockfish_x86-64-ssse3
-          path: ./*
-
