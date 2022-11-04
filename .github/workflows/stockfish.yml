@@ -149,7 +149,7 @@ jobs:
 
       - name: Create binary folder
         run: |
-          mkdir binaries
+          mkdir ./binaries
 
       - name: Check compiler
         run: |
