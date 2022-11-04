@@ -5,6 +5,7 @@ on:
       - master
       - tools
       - github_ci
+      - artifact-sha
   pull_request:
     branches:
       - master
