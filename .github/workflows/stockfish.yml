@@ -166,6 +166,7 @@ jobs:
           ../tests/signature.sh $benchref
           mv stockfish_$(cat ../git_commit) ..
           make clean
+          rm nn-*.nnue
 
       - uses: actions/upload-artifact@v3
         with:
