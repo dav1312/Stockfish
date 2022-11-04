@@ -156,11 +156,12 @@ jobs:
           make clean
           make -j2 ARCH=x86-64-modern build
           ../tests/signature.sh $benchref
+          mv stockfish* ..
       
       - uses: actions/upload-artifact@v2
         with:
           name: stockfish_x86-64-modern
-          path: src/stockfish*
+          path: ./*
 
       - name: Test x86-64-ssse3 build
         if: ${{ matrix.config.run_64bit_tests }}
@@ -172,11 +173,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: stockfish_x86-64-ssse3
-          path: src/stockfish*
+          path: ./*
 
-      - name: Test x86-64-sse3-popcnt build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-sse3-popcnt build
-          ../tests/signature.sh $benchref
