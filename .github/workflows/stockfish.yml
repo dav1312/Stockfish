@@ -78,39 +78,39 @@ jobs:
               run_64bit_tests: true,
               shell: 'bash {0}'
             }
-          # - {
-          #     name: "Windows 2022 Mingw-w64 GCC x86_64",
-          #     os: windows-2022,
-          #     compiler: g++,
-          #     comp: mingw,
-          #     run_64bit_tests: true,
-          #     msys_sys: 'mingw64',
-          #     msys_env: 'x86_64-gcc',
-          #     shell: 'msys2 {0}',
-          #     ext: .exe
-          #   }
-          # - {
-          #     name: "Windows 2022 Mingw-w64 GCC i686",
-          #     os: windows-2022,
-          #     compiler: g++,
-          #     comp: mingw,
-          #     run_32bit_tests: true,
-          #     msys_sys: 'mingw32',
-          #     msys_env: 'i686-gcc',
-          #     shell: 'msys2 {0}',
-          #     ext: .exe
-          #   }
-          # - {
-          #     name: "Windows 2022 Mingw-w64 Clang x86_64",
-          #     os: windows-2022,
-          #     compiler: clang++,
-          #     comp: clang,
-          #     run_64bit_tests: true,
-          #     msys_sys: 'clang64',
-          #     msys_env: 'clang-x86_64-clang',
-          #     shell: 'msys2 {0}',
-          #     ext: .exe
-          #   }
+          - {
+              name: "Windows 2022 Mingw-w64 GCC x86_64",
+              os: windows-2022,
+              compiler: g++,
+              comp: mingw,
+              run_64bit_tests: true,
+              msys_sys: 'mingw64',
+              msys_env: 'x86_64-gcc',
+              shell: 'msys2 {0}',
+              ext: .exe
+            }
+          - {
+              name: "Windows 2022 Mingw-w64 GCC i686",
+              os: windows-2022,
+              compiler: g++,
+              comp: mingw,
+              run_32bit_tests: true,
+              msys_sys: 'mingw32',
+              msys_env: 'i686-gcc',
+              shell: 'msys2 {0}',
+              ext: .exe
+            }
+          - {
+              name: "Windows 2022 Mingw-w64 Clang x86_64",
+              os: windows-2022,
+              compiler: clang++,
+              comp: clang,
+              run_64bit_tests: true,
+              msys_sys: 'clang64',
+              msys_env: 'clang-x86_64-clang',
+              shell: 'msys2 {0}',
+              ext: .exe
+            }
 
     defaults:
       run:
@@ -162,13 +162,13 @@ jobs:
 
       # x86-32 tests
 
-      - name: Test debug x86-32 build
-        if: ${{ matrix.config.run_32bit_tests }}
-        run: |
-          export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
-          make clean
-          make -j2 ARCH=x86-32 optimize=no debug=yes build
-          ../tests/signature.sh $benchref
+      # - name: Test debug x86-32 build
+      #   if: ${{ matrix.config.run_32bit_tests }}
+      #   run: |
+      #     export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
+      #     make clean
+      #     make -j2 ARCH=x86-32 optimize=no debug=yes build
+      #     ../tests/signature.sh $benchref
 
       - name: Test x86-32 build
         if: ${{ matrix.config.run_32bit_tests }}
@@ -204,13 +204,13 @@ jobs:
 
       # x86-64 tests
 
-      - name: Test debug x86-64-modern build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
-          make clean
-          make -j2 ARCH=x86-64-modern optimize=no debug=yes build
-          ../tests/signature.sh $benchref
+      # - name: Test debug x86-64-modern build
+      #   if: ${{ matrix.config.run_64bit_tests }}
+      #   run: |
+      #     export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
+      #     make clean
+      #     make -j2 ARCH=x86-64-modern optimize=no debug=yes build
+      #     ../tests/signature.sh $benchref
 
       - name: Test x86-64-modern build
         if: ${{ matrix.config.run_64bit_tests }}
