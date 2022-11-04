@@ -182,6 +182,7 @@ jobs:
             Copying.txt
             src/*
             !src/nn-*.nnue
+            !src/stockfish*
             stockfish*
 
       - name: Test x86-32-sse41-popcnt build
@@ -192,6 +193,17 @@ jobs:
           ../tests/signature.sh $benchref
           mv ./stockfish${{matrix.config.ext}} ../stockfish-x86-32-sse41-popcnt${{matrix.config.ext}}
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Stockfish ${{matrix.config.name}}-x86-32-sse41-popcnt
+          path: |
+            AUTHORS
+            Copying.txt
+            src/*
+            !src/nn-*.nnue
+            !src/stockfish*
+            stockfish*
+
       - name: Test x86-32-sse2 build
         if: ${{ matrix.config.run_32bit_tests }}
         run: |
@@ -199,6 +211,17 @@ jobs:
           make -j2 ARCH=x86-32-sse2 build sha=$git_sha
           ../tests/signature.sh $benchref
           mv ./stockfish${{matrix.config.ext}} ../stockfish-x86-32-sse2${{matrix.config.ext}}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Stockfish ${{matrix.config.name}}-x86-32-sse2
+          path: |
+            AUTHORS
+            Copying.txt
+            src/*
+            !src/nn-*.nnue
+            !src/stockfish*
+            stockfish*
 
       # - name: Test general-32 build
       #   if: ${{ matrix.config.run_32bit_tests }}
