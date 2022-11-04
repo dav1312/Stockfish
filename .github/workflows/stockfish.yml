@@ -161,11 +161,10 @@ jobs:
           make -j2 ARCH=x86-64-modern build
           ../tests/signature.sh $benchref
           if [ "$RUNNER_OS" == "Windows" ]; then
-            mv stockfish.exe stockfish_$(cat ../git_commit).exe
+            mv stockfish.exe ../stockfish_$(cat ../git_commit).exe
           else
-            mv stockfish stockfish_$(cat ../git_commit)
+            mv stockfish ../stockfish_$(cat ../git_commit)
           fi
-          mv stockfish_$(cat ../git_commit) ..
           make clean
           rm nn-*.nnue
 
