@@ -33,8 +33,6 @@ jobs:
             shell: msys2 {0}
             ext: .exe
         binaries:
-          - x86-64
-          - x86-64-modern
           - x86-64-avx2
         exclude:
           - binaries: x86-64-avx2
