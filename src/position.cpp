@@ -871,11 +871,10 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck, std::ofstream&
   // Update king attacks used for fast check detection
   set_check_info(st);
   fileGraph << st->previous->key << " -> " << st->key << "[label=" << UCI::move(m, false) << "]" << std::endl;
-//   std::cout << "xxx " << st->previous->key << " -> " << st->key << "[label=" << UCI::move(m, false) << "]" << std::endl;
+  
   if (checkers())
   {
       fileGraph << st->key << "[label=chk,shape=" << (side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
-    //  std::cout << "xxx " << st->key << "[label=chk,shape=" << (side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
   }
 
   // Calculate the repetition info. It is the ply distance from the previous
@@ -1031,7 +1030,6 @@ void Position::do_null_move(StateInfo& newSt, std::ofstream& fileGraph) {
   set_check_info(st);
   
   fileGraph << st->previous->key << " -> " << st->key << "[color=blue,fontcolor=blue,label=null]" << std::endl;
-//   std::cout << "xxx " << st->previous->key << " -> " << st->key << "[color=blue,fontcolor=blue,label=null]" << std::endl;
   st->repetition = 0;
 
   assert(pos_is_ok());

@@ -206,7 +206,7 @@ void MainThread::search() {
       Threads.start_searching(); // start non-main threads
       Thread::search();          // main thread start searching
   }
-  fileGraph.close();
+
   // When we reach the maximum depth, we can arrive here without a raise of
   // Threads.stop. However, if we are pondering or in an infinite search,
   // the UCI protocol states that we shouldn't print the best move before the
@@ -256,6 +256,7 @@ void MainThread::search() {
 
   std::cout << sync_endl;
   
+  fileGraph.close();
 }
 
 
@@ -1482,7 +1483,6 @@ moves_loop: // When in check, search starts here
             if ((ss-1)->currentMove == MOVE_NULL) 
                 fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? ss->staticEval : -ss->staticEval) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
             
-            //    std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? ss->staticEval : -ss->staticEval) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
         }
 
         // Stand pat. Return immediately if static value is at least beta
@@ -1784,7 +1784,6 @@ moves_loop: // When in check, search starts here
         pos.do_move(pv[i], st[i], fileGraph);
         Key nextKey = pos.key();
         fileGraph << prevKey << " -> " << nextKey << "[color=red,penwidth=3.0,fontcolor=red,label=" << UCI::move(pv[i], false) << "]" << std::endl;
-        // std::cout << "xxx " << prevKey << " -> " << nextKey << "[color=red,penwidth=3.0,fontcolor=red,label=" << UCI::move(pv[i], false) << "]" << std::endl;
     }
 
     bool isDraw = pos.is_draw(pv.size());

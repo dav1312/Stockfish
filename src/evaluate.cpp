@@ -1094,10 +1094,7 @@ Value Eval::evaluate(const Position& pos, std::ofstream& fileGraph, int* complex
   if (complexity && useClassical)
       *complexity = abs(v - psq);
 
-  //std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
   fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
-  
-//   std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
   return v;
 }
 
