@@ -1,1 +1,0 @@
-cat header t footer > graph.dot && dot -Tsvg -o graph.svg graph.dot && eog graph.svg
