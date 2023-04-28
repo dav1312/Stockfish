@@ -105,7 +105,7 @@ jobs:
           cd ../wiki
           rm -rf .git
 
-      - name: Create tar archive.
+      - name: Zip files
         run: |
           cd ..
           mkdir stockfish
@@ -115,10 +115,12 @@ jobs:
           cp "Top CPU Contributors.txt" stockfish/
           cp Copying.txt stockfish/
           cp AUTHORS stockfish/
-          tar -cvf stockfish-android-$BINARY.tar stockfish
+          cp CITATION.cff stockfish/
+          cp README.md stockfish/
+          zip -r stockfish-android-$BINARY.zip stockfish
 
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
           name: stockfish-android-${{ matrix.binaries }}
-          path: stockfish-android-${{ matrix.binaries }}.tar
+          path: stockfish-android-${{ matrix.binaries }}.zip

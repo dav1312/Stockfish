@@ -89,7 +89,7 @@ jobs:
           cd ../wiki
           rm -rf .git
 
-      - name: Create tar archive.
+      - name: Zip files
         run: |
           cd ..
           mkdir stockfish
@@ -99,10 +99,12 @@ jobs:
           cp "Top CPU Contributors.txt" stockfish/
           cp Copying.txt stockfish/
           cp AUTHORS stockfish/
-          tar -cvf stockfish-$OS-$BINARY.tar stockfish
+          cp CITATION.cff stockfish/
+          cp README.md stockfish/
+          zip -r stockfish-$OS-$BINARY.zip stockfish
 
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
-          path: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}.tar
+          path: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}.zip

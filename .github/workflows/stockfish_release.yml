@@ -1,0 +1,30 @@
+name: Make Release
+on:
+  push:
+    tags:
+      - '*'
+
+  workflow_run:
+    workflows: ["Binaries", "ARM_Binaries"]
+    types:
+      - completed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Download Binaries
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          draft: true
+          files: artifacts/*
