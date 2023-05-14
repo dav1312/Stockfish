@@ -1,6 +1,6 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
-  Copyright (C) 2004-2022 The Stockfish developers (see AUTHORS file)
+  Copyright (C) 2004-2023 The Stockfish developers (see AUTHORS file)
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -107,18 +107,57 @@ Value Endgame<KXK>::operator()(const Position& pos) const {
 
   Square strongKing = pos.square<KING>(strongSide);
   Square weakKing   = pos.square<KING>(weakSide);
+  Value result = Value(push_to_edge(weakKing) + push_close(strongKing, weakKing));
 
-  Value result =  pos.non_pawn_material(strongSide)
-                + pos.count<PAWN>(strongSide) * PawnValueEg
-                + push_to_edge(weakKing)
-                + push_close(strongKing, weakKing);
-
-  if (   pos.count<QUEEN>(strongSide)
+   // All minimum winning zero pawn material configurations
+   if (  pos.count<QUEEN>(strongSide)
       || pos.count<ROOK>(strongSide)
+      || pos.count<KNIGHT>(strongSide) > 2
       ||(pos.count<BISHOP>(strongSide) && pos.count<KNIGHT>(strongSide))
       || (   (pos.pieces(strongSide, BISHOP) & ~DarkSquares)
           && (pos.pieces(strongSide, BISHOP) &  DarkSquares)))
-      result = std::min(result + VALUE_KNOWN_WIN, VALUE_TB_WIN_IN_MAX_PLY - 1);
+   {
+      result = std::min(result + pos.non_pawn_material(strongSide) + VALUE_KNOWN_WIN, VALUE_TB_WIN - 7 * TraditionalPawnValue);
+      return pos.side_to_move() == strongSide ? result : -result;
+   }
+
+  Bitboard Pawns = pos.pieces(strongSide, PAWN);
+
+  // Either 2 or fewer knights or same colored bishops without pawns
+  if (!Pawns)
+      return VALUE_DRAW;
+
+  // At least 1 pawn not on A or H files + bishop or 1+ pawns + knight(s)
+  if ((Pawns & ~FileABB & ~FileHBB) || pos.count<KNIGHT>(strongSide))
+  {
+      result += pos.count<PAWN>(strongSide) * PawnValueEg + pos.non_pawn_material(strongSide);
+      result = std::min(result + VALUE_KNOWN_WIN, VALUE_TB_WIN - 7 * TraditionalPawnValue);
+      return pos.side_to_move() == strongSide ? result : -result;
+  }
+
+  // Only same colored bishops left
+  // All pawns are on File A or H
+  if (!(Pawns & ~FileABB) || !(Pawns & ~FileHBB))
+  {
+    Bitboard strongBishops = pos.pieces(strongSide, BISHOP);
+    Square bishopSq = lsb(strongBishops);
+    Square queeningSq = relative_square(strongSide, make_square(file_of(lsb(Pawns)), RANK_8));
+    Square weakKingSq = pos.square<KING>(weakSide);
+
+    if (!opposite_colors(queeningSq, bishopSq))
+    {
+      result = std::min(result + PawnValueEg + pos.non_pawn_material(strongSide) + VALUE_KNOWN_WIN, VALUE_TB_WIN - 7 * TraditionalPawnValue);
+      return pos.side_to_move() == strongSide ? result : -result;
+    }
+    // Wrong colored bishop(s)
+    if (distance(queeningSq, weakKingSq) <= 1)
+        return VALUE_DRAW;
+  }
+  else
+  {
+      result = std::min(result + PawnValueEg + pos.non_pawn_material(strongSide) + VALUE_KNOWN_WIN, VALUE_TB_WIN - 7 * TraditionalPawnValue);
+      return pos.side_to_move() == strongSide ? result : -result;
+  }
 
   return strongSide == pos.side_to_move() ? result : -result;
 }
@@ -143,7 +182,7 @@ Value Endgame<KBNK>::operator()(const Position& pos) const {
                 + push_close(strongKing, weakKing)
                 + 420 * push_to_corner(opposite_colors(strongBishop, SQ_A1) ? flip_file(weakKing) : weakKing);
 
-  assert(abs(result) < VALUE_TB_WIN_IN_MAX_PLY);
+  assert(abs(result) < VALUE_MATE_IN_MAX_PLY);
   return strongSide == pos.side_to_move() ? result : -result;
 }
 
@@ -320,7 +359,6 @@ template<> Value Endgame<KNNK>::operator()(const Position&) const { return VALUE
 template<>
 ScaleFactor Endgame<KBPsK>::operator()(const Position& pos) const {
 
-  assert(pos.non_pawn_material(strongSide) == BishopValueMg);
   assert(pos.count<PAWN>(strongSide) >= 1);
 
   // No assertions about the material of weakSide, because we want draws to
@@ -328,8 +366,9 @@ ScaleFactor Endgame<KBPsK>::operator()(const Position& pos) const {
 
   Bitboard strongPawns = pos.pieces(strongSide, PAWN);
   Bitboard allPawns = pos.pieces(PAWN);
+  Bitboard strongBishops = pos.pieces(strongSide, BISHOP);
 
-  Square strongBishop = pos.square<BISHOP>(strongSide);
+  Square strongBishop = lsb(strongBishops);
   Square weakKing = pos.square<KING>(weakSide);
   Square strongKing = pos.square<KING>(strongSide);
 
@@ -386,17 +425,17 @@ ScaleFactor Endgame<KQKRPs>::operator()(const Position& pos) const {
   assert(pos.count<ROOK>(weakSide) == 1);
   assert(pos.count<PAWN>(weakSide) >= 1);
 
-  Square strongKing = pos.square<KING>(strongSide);
-  Square weakKing   = pos.square<KING>(weakSide);
-  Square weakRook   = pos.square<ROOK>(weakSide);
+  Square weakKing = pos.square<KING>(weakSide);
+  Bitboard defended_pawns, safe_rank, knight_file;
 
-  if (    relative_rank(weakSide,   weakKing) <= RANK_2
-      &&  relative_rank(weakSide, strongKing) >= RANK_4
-      &&  relative_rank(weakSide,   weakRook) == RANK_3
-      && (  pos.pieces(weakSide, PAWN)
-          & attacks_bb<KING>(weakKing)
-          & pawn_attacks_bb(strongSide, weakRook)))
-          return SCALE_FACTOR_DRAW;
+  safe_rank = weakSide == WHITE ? Rank2BB : Rank7BB;
+
+  knight_file = FileBBB | FileGBB;
+
+  defended_pawns = pos.pieces(weakSide, PAWN) & attacks_bb<KING>(weakKing) & (safe_rank | knight_file) & ~(FileABB | FileHBB);
+
+  if (defended_pawns)
+      return SCALE_FACTOR_DRAW;
 
   return SCALE_FACTOR_NONE;
 }
