@@ -270,6 +270,25 @@ namespace Stockfish::Eval::NNUE {
       return !stream.fail();
     }
 
+    
+    // Convert input features
+    std::int32_t transform2(const Position& pos, int bucket) const {
+      update_accumulator<WHITE>(pos);
+      update_accumulator<BLACK>(pos);
+
+      const Color perspectives[2] = {pos.side_to_move(), ~pos.side_to_move()};
+      const auto& accumulation = pos.state()->accumulator.accumulation;
+      const auto& psqtAccumulation = pos.state()->accumulator.psqtAccumulation;
+
+      const auto psqt = (
+            psqtAccumulation[perspectives[0]][bucket]
+          - psqtAccumulation[perspectives[1]][bucket]
+        ) / 2;
+
+      return psqt;
+    } // end of function transform()
+
+
     // Convert input features
     std::int32_t transform(const Position& pos, OutputType* output, int bucket) const {
       update_accumulator<WHITE>(pos);

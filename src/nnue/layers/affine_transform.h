@@ -426,40 +426,18 @@ namespace Stockfish::Eval::NNUE::Layers {
       return hashValue;
     }
 
-    static IndexType get_weight_index_scrambled(IndexType i)
-    {
-      return
-        (i / 4) % (PaddedInputDimensions / 4) * OutputDimensions * 4 +
-        i / PaddedInputDimensions * 4 +
-        i % 4;
-    }
-
-    static IndexType get_weight_index(IndexType i)
-    {
-#if defined (USE_SSSE3)
-      return get_weight_index_scrambled(i);
-#else
-      return i;
-#endif
-    }
-
     // Read network parameters
     bool read_parameters(std::istream& stream) {
       read_little_endian<BiasType>(stream, biases, OutputDimensions);
       for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
-        weights[get_weight_index(i)] = read_little_endian<WeightType>(stream);
+        weights[i] = read_little_endian<WeightType>(stream);
 
       return !stream.fail();
     }
 
     // Write network parameters
     bool write_parameters(std::ostream& stream) const {
-      write_little_endian<BiasType>(stream, biases, OutputDimensions);
-
-      for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
-        write_little_endian<WeightType>(stream, weights[get_weight_index(i)]);
-
-      return !stream.fail();
+      return true;
     }
     // Forward propagation
     const OutputType* propagate(
@@ -550,7 +528,7 @@ namespace Stockfish::Eval::NNUE::Layers {
       return output;
     }
 
-   private:
+   public:
     using BiasType = OutputType;
     using WeightType = std::int8_t;
 

@@ -29,6 +29,7 @@
 #include "../position.h"
 #include "../uci.h"
 #include "../types.h"
+#include <immintrin.h>
 
 #include "evaluate_nnue.h"
 
@@ -143,6 +144,8 @@ namespace Stockfish::Eval::NNUE {
 
   // Evaluation function. Perform differential calculation.
   Value evaluate(const Position& pos, bool adjusted, int* complexity) {
+    
+	auto start = std::chrono::high_resolution_clock::now();
 
     // We manually align the arrays on the stack because with gcc < 9.3
     // overaligning stack variables with alignas() doesn't work correctly.
@@ -161,10 +164,40 @@ namespace Stockfish::Eval::NNUE {
 #endif
 
     ASSERT_ALIGNED(transformedFeatures, alignment);
-
+    
     const int bucket = (pos.count<ALL_PIECES>() - 1) / 4;
-    const auto psqt = featureTransformer->transform(pos, transformedFeatures, bucket);
-    const auto positional = network[bucket]->propagate(transformedFeatures);
+    const auto psqt = featureTransformer->transform2(pos, bucket);
+
+    const Color perspectives[2] = {pos.side_to_move(), ~pos.side_to_move()};
+    const auto& accumulation = pos.state()->accumulator.accumulation;
+    const auto& psqtAccumulation = pos.state()->accumulator.psqtAccumulation;
+    constexpr uint32_t HalfDimensions = 1024u;
+    __m256i* input_simd = reinterpret_cast<__m256i*>(transformedFeatures);
+    
+    const __m256i* own1 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[0])]);
+    const __m256i* own2 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[0])] + 512);
+    const __m256i* opp1 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[1])]);
+    const __m256i* opp2 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[1])] + 512);
+
+    const __m256i zero = _mm256_setzero_si256();
+    const __m256i max = _mm256_set1_epi16(127);
+
+    //Featuretransform
+    for (int j = 0; j < 512 / 16; ++j) {
+      auto sum0 = _mm256_max_epi16(zero, _mm256_min_epi16(max, own1[j]));
+      auto sum1 = _mm256_max_epi16(zero, _mm256_min_epi16(max, own2[j]));
+      auto sum2 = _mm256_max_epi16(zero, _mm256_min_epi16(max, opp1[j]));
+      auto sum3 = _mm256_max_epi16(zero, _mm256_min_epi16(max, opp2[j]));
+
+      input_simd[j] = _mm256_packus_epi16(
+        _mm256_srli_epi16(_mm256_mullo_epi16(sum0, sum1), 7),
+        _mm256_srli_epi16(_mm256_mullo_epi16(sum2, sum3), 7));
+    }
+
+    const auto positional = network[bucket]->propagate2(input_simd);
+
+    total_nnue_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start).count();
+    total_nnue_invocations++;
 
     if (complexity)
         *complexity = abs(psqt - positional) / OutputScale;
@@ -205,9 +238,37 @@ namespace Stockfish::Eval::NNUE {
 
     NnueEvalTrace t{};
     t.correctBucket = (pos.count<ALL_PIECES>() - 1) / 4;
+
+    const Color perspectives[2] = {pos.side_to_move(), ~pos.side_to_move()};
+    const auto& accumulation = pos.state()->accumulator.accumulation;
+    const auto& psqtAccumulation = pos.state()->accumulator.psqtAccumulation;
+    constexpr uint32_t HalfDimensions = 1024u;
+    __m256i* input_simd = reinterpret_cast<__m256i*>(transformedFeatures);
+
     for (IndexType bucket = 0; bucket < LayerStacks; ++bucket) {
-      const auto materialist = featureTransformer->transform(pos, transformedFeatures, bucket);
-      const auto positional = network[bucket]->propagate(transformedFeatures);
+      const auto materialist = featureTransformer->transform2(pos, bucket);
+
+      const __m256i* own1 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[0])]);
+			const __m256i* own2 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[0])] + 512);
+			const __m256i* opp1 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[1])]);
+			const __m256i* opp2 = reinterpret_cast<const __m256i*>(accumulation[static_cast<int>(perspectives[1])] + 512);
+
+      const __m256i zero = _mm256_setzero_si256();
+			const __m256i max = _mm256_set1_epi16(127);
+
+			//Featuretransform
+			for (int j = 0; j < 512 / 16; ++j) {
+				auto sum0 = _mm256_max_epi16(zero, _mm256_min_epi16(max, own1[j]));
+				auto sum1 = _mm256_max_epi16(zero, _mm256_min_epi16(max, own2[j]));
+				auto sum2 = _mm256_max_epi16(zero, _mm256_min_epi16(max, opp1[j]));
+				auto sum3 = _mm256_max_epi16(zero, _mm256_min_epi16(max, opp2[j]));
+
+				input_simd[j] = _mm256_packus_epi16(
+					_mm256_srli_epi16(_mm256_mullo_epi16(sum0, sum1), 7),
+					_mm256_srli_epi16(_mm256_mullo_epi16(sum2, sum3), 7));
+			}
+
+      const auto positional = network[bucket]->propagate2(input_simd);
 
       t.psqt[bucket] = static_cast<Value>( materialist / OutputScale );
       t.positional[bucket] = static_cast<Value>( positional / OutputScale );

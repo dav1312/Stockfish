@@ -33,9 +33,11 @@
 #include "uci.h"
 #include "syzygy/tbprobe.h"
 #include "nnue/evaluate_nnue.h"
+#include "nnue/nnue_architecture.h"
 
 using namespace std;
-
+std::atomic<uint64_t> total_nnue_ns = 0;
+std::atomic<uint64_t> total_nnue_invocations = 0; 
 namespace Stockfish {
 
 namespace {
@@ -155,6 +157,7 @@ namespace {
   // Firstly, a list of UCI commands is set up according to the bench
   // parameters, then it is run one by one, printing a summary at the end.
 
+
   void bench(Position& pos, istream& args, StateListPtr& states) {
 
     string token;
@@ -191,10 +194,13 @@ namespace {
 
     dbg_print();
 
+    double nnue_perf = total_nnue_invocations * 1000.0 / total_nnue_ns;
+    std::cout << total_nnue_invocations <<"\n" << total_nnue_ns << "\n";
     cerr << "\n==========================="
          << "\nTotal time (ms) : " << elapsed
          << "\nNodes searched  : " << nodes
-         << "\nNodes/second    : " << 1000 * nodes / elapsed << endl;
+         << "\nNodes/second    : " << 1000 * nodes / elapsed
+         << "\nMillion NNUE evals per second: " << nnue_perf << endl;
   }
 
   // The win rate model returns the probability of winning (in per mille units) given an

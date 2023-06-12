@@ -25,6 +25,9 @@
 
 #include <memory>
 
+extern std::atomic<uint64_t> total_nnue_ns;
+extern std::atomic<uint64_t> total_nnue_invocations; 
+
 namespace Stockfish::Eval::NNUE {
 
   // Hash value of evaluation function structure
