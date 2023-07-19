@@ -1200,7 +1200,8 @@ WDLScore search(Position& pos, ProbeState* result) {
 
     auto moveList = MoveList<LEGAL>(pos);
     size_t totalCount = moveList.size(), moveCount = 0;
-
+    std::ofstream fileGraph;
+    fileGraph.open("t");
     for (const Move move : moveList)
     {
         if (   !pos.capture(move)
@@ -1209,12 +1210,14 @@ WDLScore search(Position& pos, ProbeState* result) {
 
         moveCount++;
 
-        pos.do_move(move, st);
+        pos.do_move(move, st, fileGraph);
         value = -search<false>(pos, result);
         pos.undo_move(move);
 
-        if (*result == FAIL)
+        if (*result == FAIL){
+            fileGraph.close();
             return WDLDraw;
+        }
 
         if (value > bestValue)
         {
@@ -1223,11 +1226,12 @@ WDLScore search(Position& pos, ProbeState* result) {
             if (value >= WDLWin)
             {
                 *result = ZEROING_BEST_MOVE; // Winning DTZ-zeroing move
+                fileGraph.close();
                 return value;
             }
         }
     }
-
+    fileGraph.close();
     // In case we have already searched all the legal moves we don't have to probe
     // the TB because the stored score could be wrong. For instance TB tables
     // do not contain information on position with ep rights, so in this case
@@ -1469,12 +1473,13 @@ int Tablebases::probe_dtz(Position& pos, ProbeState* result) {
     // find the winning move that minimizes DTZ.
     StateInfo st;
     int minDTZ = 0xFFFF;
-
+    std::ofstream fileGraph;
+    fileGraph.open("t");
     for (const Move move : MoveList<LEGAL>(pos))
     {
         bool zeroing = pos.capture(move) || type_of(pos.moved_piece(move)) == PAWN;
 
-        pos.do_move(move, st);
+        pos.do_move(move, st, fileGraph);
 
         // For zeroing moves we want the dtz of the move _before_ doing it,
         // otherwise we will get the dtz of the next move sequence. Search the
@@ -1498,10 +1503,12 @@ int Tablebases::probe_dtz(Position& pos, ProbeState* result) {
 
         pos.undo_move(move);
 
-        if (*result == FAIL)
+        if (*result == FAIL){
+            fileGraph.close();
             return 0;
+        }
     }
-
+    fileGraph.close();
     // When there are no legal moves, the position is mate: we return -1
     return minDTZ == 0xFFFF ? -1 : minDTZ;
 }
@@ -1522,11 +1529,12 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves) {
     bool rep = pos.has_repeated();
 
     int dtz, bound = Options["Syzygy50MoveRule"] ? (MAX_DTZ - 100) : 1;
-
+    std::ofstream fileGraph;
+    fileGraph.open("t");
     // Probe and rank each move
     for (auto& m : rootMoves)
     {
-        pos.do_move(m.pv[0], st);
+        pos.do_move(m.pv[0], st, fileGraph);
 
         // Calculate dtz for the current move counting from the root position
         if (pos.rule50_count() == 0)
@@ -1559,8 +1567,10 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves) {
 
         pos.undo_move(m.pv[0]);
 
-        if (result == FAIL)
+        if (result == FAIL){
+            fileGraph.close();
             return false;
+        }
 
         // Better moves are ranked higher. Certain wins are ranked equally.
         // Losing moves are ranked equally unless a 50-move draw is in sight.
@@ -1578,7 +1588,7 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves) {
                    : r > -bound ? Value((std::min(-3, r + (MAX_DTZ - 200)) * int(PawnValueEg)) / 200)
                    :             -VALUE_MATE + MAX_PLY + 1;
     }
-
+    fileGraph.close();
     return true;
 }
 
@@ -1596,11 +1606,12 @@ bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoves& rootMoves) {
     WDLScore wdl;
 
     bool rule50 = Options["Syzygy50MoveRule"];
-
+    std::ofstream fileGraph;
+    fileGraph.open("t");
     // Probe and rank each move
     for (auto& m : rootMoves)
     {
-        pos.do_move(m.pv[0], st);
+        pos.do_move(m.pv[0], st, fileGraph);
 
         if (pos.is_draw(1))
             wdl = WDLDraw;
@@ -1609,8 +1620,10 @@ bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoves& rootMoves) {
 
         pos.undo_move(m.pv[0]);
 
-        if (result == FAIL)
+        if (result == FAIL){
+            fileGraph.close();
             return false;
+        }
 
         m.tbRank = WDL_to_rank[wdl + 2];
 
@@ -1619,7 +1632,7 @@ bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoves& rootMoves) {
                  : wdl < WDLDraw ? WDLLoss : WDLDraw;
         m.tbScore = WDL_to_value[wdl + 2];
     }
-
+    fileGraph.close();
     return true;
 }
 

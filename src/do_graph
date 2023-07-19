@@ -1,0 +1,1 @@
+cat inp | ./stockfish && cat t | sort | uniq > t.uniq && cat header t.uniq footer > graph.dot && dot -Tsvg -o graph.svg graph.dot && eog graph.svg
