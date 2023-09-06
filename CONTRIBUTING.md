@@ -51,8 +51,10 @@ further discussion.
   description.
 
 > [!NOTE]
-> First time contributors should add their name to [AUTHORS](../AUTHORS)._  
-Stockfish's development is not focused on adding new features. Thus any pull
+> First time contributors should add their name to [AUTHORS](../AUTHORS)._
+
+> [!NOTE]
+> Stockfish's development is not focused on adding new features. Thus any pull
 request introducing new features will potentially be closed without further
 discussion.
 
