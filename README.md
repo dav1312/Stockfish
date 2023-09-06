@@ -40,7 +40,8 @@ developed independently from Stockfish and are available online. **Read the
 documentation for your GUI** of choice for information about how to use
 Stockfish with it.
 
-See also the Stockfish [documentation][wiki-usage-link] for further usage help.
+> [!NOTE]
+> See also the Stockfish [documentation][wiki-usage-link] for further usage help.
 
 ## Files
 
@@ -100,7 +101,8 @@ cd src
 make -j profile-build ARCH=x86-64-avx2
 ```
 
-Detailed compilation instructions for all platforms can be found in our
+> [!NOTE]
+> Detailed compilation instructions for all platforms can be found in our
 [documentation][wiki-compile-link]. Our wiki also has information about
 the [UCI commands][wiki-uci-link] supported by Stockfish.
 
