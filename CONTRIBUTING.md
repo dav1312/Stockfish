@@ -32,9 +32,10 @@ If you find a bug, please open an issue on the
 like your operating system, build environment, and a detailed description of the
 problem.
 
-_Please note that Stockfish's development is not focused on adding new features.
+> [!NOTE]
+> Please note that Stockfish's development is not focused on adding new features.
 Thus any issue regarding missing features will potentially be closed without
-further discussion._
+further discussion.
 
 ### Submitting Pull Requests
 
@@ -49,11 +50,11 @@ further discussion._
 - Provide a clear and concise description of the changes in the pull request
   description.
 
-_First time contributors should add their name to [AUTHORS](../AUTHORS)._
-
-_Stockfish's development is not focused on adding new features. Thus any pull
+> [!NOTE]
+> First time contributors should add their name to [AUTHORS](../AUTHORS)._  
+Stockfish's development is not focused on adding new features. Thus any pull
 request introducing new features will potentially be closed without further
-discussion._
+discussion.
 
 ## Code Style
 
