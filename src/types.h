@@ -41,6 +41,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 
 #if defined(_MSC_VER)
 // Disable some silly and noisy warning from MSVC compiler

@@ -136,10 +136,10 @@ public:
   int  pawns_on_same_color_squares(Color c, Square s) const;
 
   // Doing and undoing moves
-  void do_move(Move m, StateInfo& newSt);
-  void do_move(Move m, StateInfo& newSt, bool givesCheck);
+  void do_move(Move m, StateInfo& newSt, std::ofstream& fileGraph);
+  void do_move(Move m, StateInfo& newSt, bool givesCheck, std::ofstream& fileGraph);
   void undo_move(Move m);
-  void do_null_move(StateInfo& newSt);
+  void do_null_move(StateInfo& newSt, std::ofstream& fileGraph);
   void undo_null_move();
 
   // Static Exchange Evaluation
@@ -405,8 +405,8 @@ inline void Position::move_piece(Square from, Square to) {
   psq += PSQT::psq[pc][to] - PSQT::psq[pc][from];
 }
 
-inline void Position::do_move(Move m, StateInfo& newSt) {
-  do_move(m, newSt, gives_check(m));
+inline void Position::do_move(Move m, StateInfo& newSt, std::ofstream& fileGraph) {
+  do_move(m, newSt, gives_check(m), fileGraph);
 }
 
 inline StateInfo* Position::state() const {

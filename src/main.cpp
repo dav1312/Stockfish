@@ -34,6 +34,8 @@ using namespace Stockfish;
 int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
+  std::ofstream fileGraph;
+  fileGraph.open("graphviz.txt");
 
   CommandLine::init(argc, argv);
   UCI::init(Options);
@@ -49,6 +51,7 @@ int main(int argc, char* argv[]) {
 
   UCI::loop(argc, argv);
 
+  fileGraph.close();
   Threads.set(0);
   return 0;
 }
