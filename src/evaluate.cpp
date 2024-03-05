@@ -163,16 +163,16 @@ void NNUE::verify(const OptionsMap&                                        optio
                              + evalFile.defaultName;
             std::string msg5 = "The engine will be terminated now.";
 
-            sync_cout << "info string ERROR: " << msg1 << sync_endl;
-            sync_cout << "info string ERROR: " << msg2 << sync_endl;
-            sync_cout << "info string ERROR: " << msg3 << sync_endl;
-            sync_cout << "info string ERROR: " << msg4 << sync_endl;
-            sync_cout << "info string ERROR: " << msg5 << sync_endl;
+            // sync_cout << "info string ERROR: " << msg1 << sync_endl;
+            // sync_cout << "info string ERROR: " << msg2 << sync_endl;
+            // sync_cout << "info string ERROR: " << msg3 << sync_endl;
+            // sync_cout << "info string ERROR: " << msg4 << sync_endl;
+            // sync_cout << "info string ERROR: " << msg5 << sync_endl;
 
             exit(EXIT_FAILURE);
         }
 
-        sync_cout << "info string NNUE evaluation using " << user_eval_file << sync_endl;
+        // sync_cout << "info string NNUE evaluation using " << user_eval_file << sync_endl;
     }
 }
 }

@@ -193,9 +193,9 @@ void Search::Worker::start_searching() {
     main_manager()->bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
 
     // Send again PV info if we have a new best thread
-    if (bestThread != this)
-        sync_cout << main_manager()->pv(*bestThread, threads, tt, bestThread->completedDepth)
-                  << sync_endl;
+    // if (bestThread != this)
+    //     sync_cout << main_manager()->pv(*bestThread, threads, tt, bestThread->completedDepth)
+    //               << sync_endl;
 
     sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
@@ -334,9 +334,9 @@ void Search::Worker::iterative_deepening() {
 
                 // When failing high/low give some update (without cluttering
                 // the UI) before a re-search.
-                if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
-                    && mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
-                    sync_cout << main_manager()->pv(*this, threads, tt, rootDepth) << sync_endl;
+                // if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
+                //     && mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
+                //     sync_cout << main_manager()->pv(*this, threads, tt, rootDepth) << sync_endl;
 
                 // In case of failing low/high increase aspiration window and
                 // re-search, otherwise exit the loop.
@@ -365,15 +365,15 @@ void Search::Worker::iterative_deepening() {
             // Sort the PV lines searched so far and update the GUI
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
-            if (mainThread
-                && (threads.stop || pvIdx + 1 == multiPV
-                    || mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
-                // A thread that aborted search can have mated-in/TB-loss PV and score
-                // that cannot be trusted, i.e. it can be delayed or refuted if we would have
-                // had time to fully search other root-moves. Thus we suppress this output and
-                // below pick a proven score/PV for this thread (from the previous iteration).
-                && !(threads.abortedSearch && rootMoves[0].uciScore <= VALUE_TB_LOSS_IN_MAX_PLY))
-                sync_cout << main_manager()->pv(*this, threads, tt, rootDepth) << sync_endl;
+            // if (mainThread
+            //     && (threads.stop || pvIdx + 1 == multiPV
+            //         || mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
+            //     // A thread that aborted search can have mated-in/TB-loss PV and score
+            //     // that cannot be trusted, i.e. it can be delayed or refuted if we would have
+            //     // had time to fully search other root-moves. Thus we suppress this output and
+            //     // below pick a proven score/PV for this thread (from the previous iteration).
+            //     && !(threads.abortedSearch && rootMoves[0].uciScore <= VALUE_TB_LOSS_IN_MAX_PLY))
+            //     sync_cout << main_manager()->pv(*this, threads, tt, rootDepth) << sync_endl;
         }
 
         if (!threads.stop)
@@ -926,11 +926,11 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && is_mainthread()
-            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
-            sync_cout << "info depth " << depth << " currmove "
-                      << UCI::move(move, pos.is_chess960()) << " currmovenumber "
-                      << moveCount + thisThread->pvIdx << sync_endl;
+        // if (rootNode && is_mainthread()
+        //     && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
+        //     sync_cout << "info depth " << depth << " currmove "
+        //               << UCI::move(move, pos.is_chess960()) << " currmovenumber "
+        //               << moveCount + thisThread->pvIdx << sync_endl;
         if (PvNode)
             (ss + 1)->pv = nullptr;
 
@@ -1864,6 +1864,7 @@ std::string SearchManager::pv(const Search::Worker&     worker,
                               const ThreadPool&         threads,
                               const TranspositionTable& tt,
                               Depth                     depth) const {
+    return "";
     std::stringstream ss;
 
     const auto  nodes     = threads.nodes_searched();
