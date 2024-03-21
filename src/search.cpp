@@ -496,7 +496,7 @@ void Search::Worker::clear() {
                     h->fill(-71);
 
     for (size_t i = 1; i < reductions.size(); ++i)
-        reductions[i] = int((19.80 + std::log(size_t(options["Threads"])) / 2) * std::log(i));
+        reductions[i] = int((19.50 + std::log(size_t(options["Threads"])) / 2) * std::log(i));
 }
 
 

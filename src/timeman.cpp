@@ -57,7 +57,9 @@ void TimeManagement::init(Search::LimitsType& limits,
     if (limits.time[us] == 0)
         return;
 
+    TimePoint minThinkingTime = TimePoint(options["Minimum Thinking Time"]);
     TimePoint moveOverhead = TimePoint(options["Move Overhead"]);
+    TimePoint slowMover    = TimePoint(options["Slow Mover"]);
     TimePoint npmsec       = TimePoint(options["nodestime"]);
 
     // optScale is a percentage of available time to use for the current move.
@@ -94,6 +96,10 @@ void TimeManagement::init(Search::LimitsType& limits,
     TimePoint timeLeft = std::max(TimePoint(1), limits.time[us] + limits.inc[us] * (mtg - 1)
                                                   - moveOverhead * (2 + mtg));
 
+    // A user may scale time usage by setting UCI option "Slow Mover"
+    // Default is 100 and changing this value will probably lose elo.
+    timeLeft = slowMover * timeLeft / 100;
+
     // x basetime (+ z increment)
     // If there is a healthy increment, timeLeft can exceed the actual available
     // game time for the current move, so also cap to a percentage of available game time.
@@ -121,7 +127,7 @@ void TimeManagement::init(Search::LimitsType& limits,
     }
 
     // Limit the maximum possible time for this move
-    optimumTime = TimePoint(optScale * timeLeft);
+    optimumTime = std::max(minThinkingTime, TimePoint(optScale * timeLeft));
     maximumTime =
       TimePoint(std::min(0.825 * limits.time[us] - moveOverhead, maxScale * optimumTime)) - 10;
 
