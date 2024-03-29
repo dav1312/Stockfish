@@ -45,6 +45,10 @@ jobs:
         id: last_commit
         run: echo "COMMIT_SHA=$(git rev-parse HEAD | cut -c 1-8)" >> $GITHUB_ENV
 
+      - name: Get commit date
+        id: commit_date
+        run: echo "COMMIT_DATE=$(git show -s --date=format:'%Y%m%d' --format=%cd HEAD)" >> $GITHUB_ENV
+
       # Create a new pre-release, the other upload_binaries.yml will upload the binaries
       # to this pre-release.
       - name: Create Prerelease
