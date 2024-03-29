@@ -28,7 +28,6 @@ jobs:
           echo "COMMIT_SHA_TAG=$(jq -r 'map(select(.prerelease)) | first | .tag_name' <<< $(curl -s https://api.github.com/repos/${{ github.repository_owner }}/Stockfish/releases))" >> $GITHUB_ENV
 
       # delete old previous pre-release and tag
-      - uses: actions/checkout@v4
       - run: gh release delete ${{ env.COMMIT_SHA_TAG }} --cleanup-tag
         if: env.COMMIT_SHA_TAG != 'null'
         env:
