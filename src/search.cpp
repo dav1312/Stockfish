@@ -87,7 +87,7 @@ namespace {
 
   // Add a small random component to draw evaluations to avoid 3-fold blindness
   Value value_draw(const Position& pos) {
-    const int drawCost = UCI::NormalizeToPawnValue * 25 / 100;
+    const int drawCost = VALUE_KNOWN_WIN;
     int drawNow = pos.side_to_move() == pos.this_thread()->rootColor ? -drawCost : drawCost;
     return Value(drawNow - 1 + (pos.this_thread()->nodes & 0x2));
   }
