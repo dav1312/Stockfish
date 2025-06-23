@@ -51,6 +51,9 @@
 
 namespace Stockfish {
 
+std::ofstream fileGraph;
+bool g_is_graphing = false;
+
 namespace TB = Tablebases;
 
 void syzygy_extend_pv(const OptionsMap&            options,
@@ -170,6 +173,29 @@ void update_all_stats(const Position&      pos,
                       bool                 isTTMove,
                       int                  moveCount);
 
+// Draws the principal variation path in red
+void draw_pv_path(Position& pos, const RootMove& rootMove) {
+
+    if (rootMove.pv.empty() || rootMove.pv[0] == Move::none())
+        return;
+
+    StateInfo st[MAX_PLY];
+    size_t i = 0;
+
+    for (const auto& move : rootMove.pv)
+    {
+        if (i >= MAX_PLY) break;
+        Key prevKey = pos.key();
+        pos.do_move(move, st[i++]); // This will write a normal black edge first
+        Key nextKey = pos.key();
+        // This second write will be used by the graph generator to make the PV edge red
+        fileGraph << prevKey << " -> " << nextKey << "[color=red,penwidth=3.0,fontcolor=red,label=\"" << UCIEngine::move(move, false) << "\"]" << std::endl;
+    }
+
+    for (size_t j = rootMove.pv.size(); j > 0; --j)
+        pos.undo_move(rootMove.pv[j-1]);
+}
+
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -195,6 +221,9 @@ void Search::Worker::ensure_network_replicated() {
 }
 
 void Search::Worker::start_searching() {
+
+    g_is_graphing = true;
+    fileGraph.open("t");
 
     accumulatorStack.reset(rootPos, networks[numaAccessToken], refreshTable);
 
@@ -265,6 +294,10 @@ void Search::Worker::start_searching() {
 
     auto bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
     main_manager()->updates.onBestmove(bestmove, ponder);
+
+    draw_pv_path(rootPos, bestThread->rootMoves[0]);
+    g_is_graphing = false;
+    fileGraph.close();
 }
 
 // Main iterative deepening loop. It calls search()
@@ -1600,10 +1633,19 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         else
         {
             // In case of null move search, use previous static eval with opposite sign
-            unadjustedStaticEval =
-              (ss - 1)->currentMove != Move::null() ? evaluate(pos) : -(ss - 1)->staticEval;
+            if ((ss - 1)->currentMove != Move::null())
+                unadjustedStaticEval = evaluate(pos);
+            else
+            {
+                unadjustedStaticEval = -(ss - 1)->staticEval;
+                if (g_is_graphing)
+                {
+                    Value v_for_graph = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+                    fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v_for_graph : -v_for_graph) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+                }
+            }
             ss->staticEval = bestValue =
-              to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+            to_corrected_static_eval(unadjustedStaticEval, correctionValue);
         }
 
         // Stand pat. Return immediately if static value is at least beta
@@ -1772,8 +1814,13 @@ TimePoint Search::Worker::elapsed() const {
 TimePoint Search::Worker::elapsed_time() const { return main_manager()->tm.elapsed_time(); }
 
 Value Search::Worker::evaluate(const Position& pos) {
-    return Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable,
+    Value v = Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable,
                           optimism[pos.side_to_move()]);
+
+    if (g_is_graphing)
+        fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+
+    return v;
 }
 
 namespace {

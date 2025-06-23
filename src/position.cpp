@@ -42,6 +42,9 @@ using std::string;
 
 namespace Stockfish {
 
+extern std::ofstream fileGraph;
+extern bool g_is_graphing;
+
 namespace Zobrist {
 
 Key psq[PIECE_NB][SQUARE_NB];
@@ -880,6 +883,13 @@ DirtyPiece Position::do_move(Move                      m,
     // Update king attacks used for fast check detection
     set_check_info();
 
+    if (g_is_graphing)
+    {
+        fileGraph << st->previous->key << " -> " << st->key << "[label=\"" << UCIEngine::move(m, false) << "\"]" << std::endl;
+        if (checkers())
+            fileGraph << st->key << "[label=chk,shape=" << (sideToMove == WHITE ? "ellipse]" : "box]") << std::endl;
+    }
+
     // Calculate the repetition info. It is the ply distance from the previous
     // occurrence of the same position, negative in the 3-fold case, or zero
     // if the position was not repeated.
@@ -1029,6 +1039,9 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
     sideToMove = ~sideToMove;
 
     set_check_info();
+
+    if (g_is_graphing)
+        fileGraph << st->previous->key << " -> " << st->key << "[color=blue,fontcolor=blue,label=null]" << std::endl;
 
     st->repetition = 0;
 

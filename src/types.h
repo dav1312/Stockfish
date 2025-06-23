@@ -38,6 +38,8 @@
 
     #include <cassert>
     #include <cstdint>
+    #include <fstream>
+    #include <iostream>
 
     #if defined(_MSC_VER)
         // Disable some silly and noisy warnings from MSVC compiler
