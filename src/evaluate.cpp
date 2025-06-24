@@ -31,6 +31,7 @@
 #include "nnue/network.h"
 #include "nnue/nnue_misc.h"
 #include "position.h"
+#include "score.h"
 #include "types.h"
 #include "uci.h"
 #include "nnue/nnue_accumulator.h"
@@ -56,7 +57,8 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
                      const Position&                pos,
                      Eval::NNUE::AccumulatorStack&  accumulators,
                      Eval::NNUE::AccumulatorCaches& caches,
-                     int                            optimism) {
+                     int                            optimism,
+                     Value*                         display_eval) {
 
     assert(!pos.checkers());
 
@@ -84,6 +86,14 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
 
     // Damp down the evaluation linearly when shuffling
     v -= v * pos.rule50_count() / 212;
+
+    // If the caller wants the display value (optimism=0), calculate it here.
+    if (display_eval)
+    {
+        int v_display = (nnue * (77777 + material)) / 77777; // Recalculate with optimism=0
+        v_display -= v_display * pos.rule50_count() / 212;
+        *display_eval = std::clamp(v_display, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+    }
 
     // Guarantee evaluation does not hit the tablebase range
     v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
@@ -114,11 +124,11 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
     auto [psqt, positional] = networks.big.evaluate(pos, accumulators, &caches->big);
     Value v                 = psqt + positional;
     v                       = pos.side_to_move() == WHITE ? v : -v;
-    ss << "NNUE evaluation        " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)\n";
+    ss << "NNUE evaluation        " << 0.01 * Score::to_cp(v, pos) << " (white side)\n";
 
     v = evaluate(networks, pos, accumulators, *caches, VALUE_ZERO);
     v = pos.side_to_move() == WHITE ? v : -v;
-    ss << "Final evaluation       " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)";
+    ss << "Final evaluation       " << 0.01 * Score::to_cp(v, pos) << " (white side)";
     ss << " [with scaled NNUE, ...]";
     ss << "\n";
 

@@ -19,6 +19,7 @@
 #ifndef SCORE_H_INCLUDED
 #define SCORE_H_INCLUDED
 
+#include <string>
 #include <variant>
 #include <utility>
 
@@ -45,6 +46,9 @@ class Score {
 
     Score() = default;
     Score(Value v, const Position& pos);
+
+    static int to_cp(Value v, const Position& pos);
+    static std::string wdl(Value v, const Position& pos);
 
     template<typename T>
     bool is() const {

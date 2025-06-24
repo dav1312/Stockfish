@@ -48,6 +48,7 @@
 #include "tt.h"
 #include "uci.h"
 #include "ucioption.h"
+#include "score.h"
 
 namespace Stockfish {
 
@@ -1640,8 +1641,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 unadjustedStaticEval = -(ss - 1)->staticEval;
                 if (g_is_graphing)
                 {
-                    Value v_for_graph = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
-                    fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v_for_graph : -v_for_graph) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+                    // For null moves, the static eval is already the final, adjusted value.
+                    // We can convert it directly.
+                    int cp = Score::to_cp(unadjustedStaticEval, pos);
+                    int cp_white_pov = (pos.side_to_move() == WHITE ? cp : -cp);
+                    fileGraph << pos.key() << "[label=" << cp_white_pov << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
                 }
             }
             ss->staticEval = bestValue =
@@ -1814,13 +1818,21 @@ TimePoint Search::Worker::elapsed() const {
 TimePoint Search::Worker::elapsed_time() const { return main_manager()->tm.elapsed_time(); }
 
 Value Search::Worker::evaluate(const Position& pos) {
-    Value v = Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable,
-                          optimism[pos.side_to_move()]);
+    Value display_v; // Variable to receive the display value
+
+    // Call evaluate, getting the search value as the return, and the display value via the pointer
+    Value search_v = Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable,
+                                    optimism[pos.side_to_move()], &display_v);
 
     if (g_is_graphing)
-        fileGraph << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+    {
+        int cp = Score::to_cp(display_v, pos);
+        int cp_white_pov = (pos.side_to_move() == WHITE ? cp : -cp);
 
-    return v;
+        fileGraph << pos.key() << "[label=" << cp_white_pov << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+    }
+
+    return search_v; // Return the value with optimism for the search
 }
 
 namespace {
