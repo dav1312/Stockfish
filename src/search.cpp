@@ -33,6 +33,7 @@
 #include <ratio>
 #include <string>
 #include <utility>
+#include <iomanip>
 
 #include "evaluate.h"
 #include "history.h"
@@ -447,6 +448,65 @@ void Search::Worker::iterative_deepening() {
 
             if (threads.stop)
                 break;
+        }
+
+        // This entire block is responsible for printing the per-move node counts.
+        // We only want the main search thread to print UCI info to avoid garbled output.
+        if (mainThread)
+        {
+            // Create a temporary vector to hold pointers to the RootMove objects.
+            // We use pointers because we want to sort by 'effort' without
+            // disrupting the original 'rootMoves' vector, which is sorted by score.
+            // This is much more efficient than copying the full RootMove structs.
+            std::vector<const RootMove*> sortedMoves;
+
+            // Iterate through all the legal root moves that the engine is considering.
+            for (const auto& rm : rootMoves)
+                // We only care about moves that the engine has actually spent time
+                // searching. If effort is 0, the move was likely pruned instantly.
+                if (rm.effort > 0)
+                    sortedMoves.push_back(&rm);
+
+            // Sort our new vector of pointers. The sorting is based on the 'effort'
+            // (which tracks nodes) of the RootMove object that each pointer points to.
+            // The lambda function `[](a, b){ return a->effort < b->effort; }` ensures
+            // we sort in ascending order (smallest node count first), matching your example.
+            std::sort(sortedMoves.begin(), sortedMoves.end(), [](const RootMove* a, const RootMove* b) {
+                return a->effort < b->effort;
+            });
+
+            // This will hold the sum of nodes for all moves to print a final total.
+            uint64_t totalEffort = 0;
+
+            // Now, loop through the *sorted* list of moves to print them one by one.
+            for (const auto* rm : sortedMoves)
+            {
+                // Add this move's node count to our running total.
+                totalEffort += rm->effort;
+
+                // Convert the internal move representation (e.g., a 16-bit integer)
+                // into a human-readable UCI string like "g2g4".
+                std::string moveStr = UCIEngine::move(rm->pv[0], rootPos.is_chess960());
+
+                // Print the formatted line. `sync_cout` is Stockfish's thread-safe
+                // way to print to the console.
+                // - std::left/right: Controls alignment within the field.
+                // - std::setw(): Sets the width of the field for clean columns.
+                sync_cout << "info string "
+                          << std::left << std::setw(5) << moveStr << " N: "  // Move string, left-aligned in a 5-char space
+                          << std::right << std::setw(8) << rm->effort        // Node count, right-aligned in an 8-char space
+                          << sync_endl;
+            }
+
+            // After printing all the individual moves, print the total node count.
+            // We only do this if there were any nodes to report.
+            if (totalEffort > 0)
+            {
+                sync_cout << "info string "
+                          << std::left << std::setw(5) << "node" << " N: "   // The label "node", left-aligned
+                          << std::right << std::setw(8) << totalEffort       // The total, right-aligned
+                          << sync_endl;
+            }
         }
 
         if (!threads.stop)
