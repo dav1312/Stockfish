@@ -74,6 +74,7 @@ struct Stack {
     bool            inCheck;
     bool            ttPv;
     bool            ttHit;
+    bool            followPV;
     bool            secondaryLine;
     bool            mainLine;
     uint16_t        cutoffCnt;
@@ -314,6 +315,8 @@ class Worker {
     Depth     rootDepth, completedDepth;
     Value     rootDelta;
     Value     pvValue;
+
+    std::vector<Move> lastIterationPV;
 
     size_t                    threadIdx, numaThreadIdx, numaTotal;
     NumaReplicatedAccessToken numaAccessToken;
