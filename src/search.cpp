@@ -88,8 +88,8 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
 
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
-Value to_corrected_static_eval(const Value v, const int cv) {
-    return std::clamp(v + cv / 131072, -VALUE_MAX_EVAL + 1, VALUE_MAX_EVAL - 1);
+Value to_corrected_static_eval(const Value v, const int cv, const uint8_t r50) {
+    return std::clamp((v + cv / 131072) * (100 - r50) / 100, -VALUE_MAX_EVAL + 1, VALUE_MAX_EVAL - 1);
 }
 
 void update_correction_history(const Position& pos,
@@ -777,7 +777,7 @@ Value Search::Worker::search(
         if (!is_valid(unadjustedStaticEval))
             unadjustedStaticEval = evaluate(pos);
 
-        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue, rule50);
 
         // ttValue can be used as a better position evaluation
         if (   is_valid(ttData.value)
@@ -794,7 +794,7 @@ Value Search::Worker::search(
     else
     {
         unadjustedStaticEval = evaluate(pos);
-        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+        ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, correctionValue, rule50);
 
         // Static evaluation is saved as it was before adjustment by correction history
         ttWriter.write(posKey, VALUE_NONE, false, BOUND_NONE, DEPTH_UNSEARCHED, Move::none(),
@@ -929,7 +929,7 @@ Value Search::Worker::search(
                    {
                        if (!excludedMove)
                            ttWriter.write(posKey, value_to_tt(value, ss->ply), ss->ttPv,
-                                     BOUND_LOWER, depth - 3, move, ss->staticEval, tt.generation(), rule50);
+                                     BOUND_LOWER, depth - 3, move, unadjustedStaticEval, tt.generation(), rule50);
 
                        return value;
                    }
@@ -1096,6 +1096,10 @@ Value Search::Worker::search(
             if (moveCount >= (3 + depth * depth) / (2 - improving))
                 mp.skip_quiet_moves();
 
+            // SEE based pruning
+            if (!pos.see_ge(move, -190 * (depth -1)))
+                continue;
+
             // Reduced depth of the next LMR search
             int lmrDepth = std::max(newDepth - r, newDepth - 4);
 
@@ -1114,10 +1118,6 @@ Value Search::Worker::search(
                     if (futilityValue <= alpha)
                         continue;
                 }
-
-                // SEE based pruning for captures and checks
-                if (!pos.see_ge(move, -190 * depth))
-                    continue;
             }
             else
             {
@@ -1144,12 +1144,6 @@ Value Search::Worker::search(
                     && lmrDepth < (5 * (2 - (ourMove && (ss-1)->secondaryLine)))
                     && history < 20500 - 3826 * (depth - 1)
                     && futilityValue <= alpha)
-                    continue;
-
-                lmrDepth = std::max(lmrDepth, 0);
-
-                // Prune moves with negative SEE
-                if (!pos.see_ge(move, -25 * lmrDepth * lmrDepth))
                     continue;
             }
         }
@@ -1583,8 +1577,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
             if (!is_valid(unadjustedStaticEval))
                 unadjustedStaticEval = evaluate(pos);
 
-            ss->staticEval = bestValue =
-              to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+            ss->staticEval = bestValue = to_corrected_static_eval(unadjustedStaticEval, correctionValue, rule50);
 
             // ttValue can be used as a better position evaluation
             if (   !is_decisive(ttData.value)
@@ -1602,7 +1595,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         {
             unadjustedStaticEval = evaluate(pos);
             ss->staticEval       = bestValue =
-              to_corrected_static_eval(unadjustedStaticEval, correctionValue);
+              to_corrected_static_eval(unadjustedStaticEval, correctionValue, rule50);
         }
 
         // Stand pat. Return immediately if static value is at least beta
@@ -1772,7 +1765,7 @@ TimePoint Search::Worker::elapsed_time() const { return main_manager()->tm.elaps
 
 Value Search::Worker::evaluate(const Position& pos) {
     return Eval::evaluate(networks[numaAccessToken], pos, accumulatorStack, refreshTable,
-                          contempt[pos.side_to_move()], pos.rule50_count());
+                          contempt[pos.side_to_move()]);
 }
 
 namespace {

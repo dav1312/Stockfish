@@ -40,12 +40,10 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
                      const Position&                pos,
                      Eval::NNUE::AccumulatorStack&  accumulators,
                      Eval::NNUE::AccumulatorCaches& caches,
-                     int                            contempt,
-                     int                            r50) {
+                     int                            contempt) {
 
     assert(!pos.checkers());
 
-    r50                     = std::min(90, r50);
     auto [psqt, positional] = networks.big.evaluate(pos, accumulators, caches.big);
 
     Value v = (125 * psqt + 131 * positional) / 128;
@@ -55,8 +53,6 @@ Value Eval::evaluate(const Eval::NNUE::Networks&    networks,
     v = (v * (77871 + material)) / 77871;
 
     v += contempt;
-
-    v = v * (100 - r50) / 100;
 
     // Do not return evals greater than a TB result
     v = std::clamp(v, -VALUE_MAX_EVAL, VALUE_MAX_EVAL);
@@ -87,7 +83,7 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
     v                       = pos.side_to_move() == WHITE ? v : -v;
     ss << "NNUE evaluation        " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)\n";
 
-    v = evaluate(networks, pos, *accumulators, *caches, VALUE_ZERO, 0);
+    v = evaluate(networks, pos, *accumulators, *caches, VALUE_ZERO);
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "Final evaluation       " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)";
     ss << " [with scaled NNUE, ...]";
