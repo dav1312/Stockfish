@@ -133,15 +133,6 @@ void update_all_stats(const Position& pos,
                       Depth           depth,
                       Move            ttMove);
 
-bool is_shuffling(Move move, Stack* const ss, const Position& pos) {
-    if (pos.capture_stage(move) || pos.rule50_count() < 11)
-        return false;
-    if (pos.state()->pliesFromNull <= 6 || ss->ply < 18)
-        return false;
-    return move.from_sq() == (ss - 2)->currentMove.to_sq()
-        && (ss - 2)->currentMove.from_sq() == (ss - 4)->currentMove.to_sq();
-}
-
 }  // namespace
 
 Search::Worker::Worker(SharedState&                    sharedState,
@@ -1188,7 +1179,6 @@ Value Search::Worker::search(
         // time controls. Generally, higher singularBeta (i.e closer to ttValue)
         // and lower extension margins scale well.
         else if (    doSingular
-                 //&& !is_shuffling(move, ss, pos)
                  &&  move == ttData.move)
         {
             Value singularBeta = std::max(ttData.value - 16 - (1 + (ss->ttPv && !PvNode)) * (depth - 1), -VALUE_MAX_EVAL);
