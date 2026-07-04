@@ -128,6 +128,7 @@ jobs:
         run: |
           UNIVERSAL_MATRIX=$(jq -c '.' .github/ci/universal_matrix.json)
           echo "UNIVERSAL_MATRIX=$UNIVERSAL_MATRIX" >> $GITHUB_OUTPUT
+
   # Testing Jobs
   IWYU:
     name: IWYU
@@ -157,6 +158,7 @@ jobs:
     name: WASM compilation
     if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/wasm_compilation.yml
+
   # Release Jobs
   ARMCompilation:
     name: Android builds
@@ -191,6 +193,7 @@ jobs:
       contents: write # For deleting/creating a (pre)release
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
+
   Android_APK:
     name: Package Android APK
     needs: [ARMCompilation] # TEMPORARY (Normally needs: [Prerelease, ARMCompilation] once testing is complete)
@@ -257,7 +260,7 @@ jobs:
           </enginelist>
           EOF
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 (for SDK Manager)
         uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           java-version: '17'
@@ -268,6 +271,12 @@ jobs:
           # Explicitly install SDK platforms and build tools to avoid build-environment conflicts
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-28" "build-tools;28.0.3"
+
+      - name: Set up JDK 11 (for Gradle compilation)
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        with:
+          java-version: '11'
+          distribution: 'temurin'
 
       - name: Compile APK
         working-directory: wrapper-repo/StockfishChessEngine
