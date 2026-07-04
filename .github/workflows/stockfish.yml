@@ -245,6 +245,12 @@ jobs:
           chmod +x "$TARGET_DIR/arm64-v8a/libstockfish.so"
           chmod +x "$TARGET_DIR/armeabi-v7a/libstockfish.so"
 
+      - name: Disable Gradle native library stripping
+        run: |
+          # Inject packagingOptions doNotStrip configurations to skip redundant binary stripping.
+          # This successfully bypasses the missing arm-linux-androideabi toolchain crash.
+          sed -i '/defaultConfig {/i \    packagingOptions { doNotStrip "**/*.so" }' wrapper-repo/StockfishChessEngine/stockfishChessEngine/build.gradle
+
       - name: Update engine list metadata
         run: |
           VERSION_NAME="Stockfish test-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}" # TEMPORARY (normally uses dev- or release tag)
