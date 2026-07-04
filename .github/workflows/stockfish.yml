@@ -270,6 +270,17 @@ jobs:
           # 3. Change category to LAUNCHER to show an app icon
           sed -i 's/android.intent.category.DEFAULT/android.intent.category.LAUNCHER/g' wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/AndroidManifest.xml
 
+          # 4. Download and overwrite default ic_launcher placeholders with the official Stockfish PNG logo
+          LOGO_URL="https://raw.githubusercontent.com/official-stockfish/stockfish-web/refs/heads/master/static/images/logo/icon_128x128%402x.png"
+          curl -s -L "$LOGO_URL" -o official_logo.png
+          
+          RES_DIR="wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/res"
+          cp official_logo.png "$RES_DIR/drawable-hdpi/ic_launcher.png"
+          cp official_logo.png "$RES_DIR/drawable-ldpi/ic_launcher.png"
+          cp official_logo.png "$RES_DIR/drawable-mdpi/ic_launcher.png"
+          cp official_logo.png "$RES_DIR/drawable-xhdpi/ic_launcher.png"
+          cp official_logo.png "$RES_DIR/drawable-xxhdpi/ic_launcher.png"
+
       - name: Update engine list metadata
         run: |
           VERSION_NAME="Stockfish test-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}" # TEMPORARY (normally uses dev- or release tag)
