@@ -255,10 +255,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Accept licenses and install Android SDK dependencies
-        run: |
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" "build-tools;35.0.0"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0"
 
       - name: Compile APK
         working-directory: wrapper-repo/StockfishChessEngine
