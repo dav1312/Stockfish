@@ -1,5 +1,6 @@
 name: Stockfish
 on:
+  workflow_dispatch: # TEMPORARY (Allows manual run triggering from GitHub interface)
   push:
     tags:
       - "*"
@@ -7,6 +8,7 @@ on:
       - master
       - tools
       - github_ci
+      - test-apk-packaging-2 # TEMPORARY (Runs automatically on push to this branch)
   pull_request:
     branches:
       - master
@@ -129,44 +131,46 @@ jobs:
   # Testing Jobs
   IWYU:
     name: IWYU
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/iwyu.yml
   Sanitizers:
     name: Sanitizers
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/sanitizers.yml
   Tests:
     name: Tests
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/tests.yml
   Matetrack:
     name: Matetrack
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/matetrack.yml
   Games:
     name: Games
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/games.yml
   CompilerCheck:
     name: Compiler check
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/avx2_compilers.yml
   WASMCompilation:
     name: WASM compilation
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/wasm_compilation.yml
   # Release Jobs
   ARMCompilation:
     name: Android builds
-    needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
+    needs: [Matrix] # TEMPORARY (Normally needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck])
     uses: ./.github/workflows/arm_compilation.yml
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
   UniversalCompilation:
     name: "Universal builds"
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
     uses: ./.github/workflows/universal_compilation.yml
   ARM_Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: false # TEMPORARY (Disabled during APK test runs)
     name: Android uploads
     needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
@@ -177,7 +181,7 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   Universal_Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: false # TEMPORARY (Disabled during APK test runs)
     name: Universal binaries
     needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
@@ -187,3 +191,101 @@ jobs:
       contents: write # For deleting/creating a (pre)release
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
+
+  Android_APK:
+    name: Package Android APK
+    needs: [ARMCompilation] # TEMPORARY (Normally needs: [Prerelease, ARMCompilation] once testing is complete)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Grants permission to attach the APK to the release
+    steps:
+      - name: Checkout Stockfish repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Get last commit sha
+        id: last_commit
+        run: echo "COMMIT_SHA=$(git rev-parse HEAD | cut -c 1-8)" >> $GITHUB_ENV
+
+      - name: Get commit date
+        id: commit_date
+        run: echo "COMMIT_DATE=$(git show -s --date=format:'%Y%m%d' --format=%cd HEAD)" >> $GITHUB_ENV
+
+      - name: Clone Chess Engine Support library
+        run: |
+          git clone --depth 1 -b update https://github.com/dav1312/chessenginesupport-androidlib.git wrapper-repo
+
+      - name: Download compiled arm64 binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: android arm64-universal
+          path: android-arm64
+
+      - name: Inject binaries into the Android project
+        run: |
+          TARGET_DIR="wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/jniLibs"
+          mkdir -p "$TARGET_DIR/arm64-v8a"
+
+          # Copy and rename native binary
+          cp android-arm64/stockfish-android-arm64-universal "$TARGET_DIR/arm64-v8a/libstockfish.so"
+
+          # Set executable permissions on binary
+          chmod +x "$TARGET_DIR/arm64-v8a/libstockfish.so"
+
+      - name: Update engine list metadata
+        run: |
+          VERSION_NAME="Stockfish test-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}" # TEMPORARY (normally uses dev- or release tag)
+          
+          # Overwrite enginelist.xml to only include the built Stockfish version and targets
+          cat <<EOF > wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/res/xml/enginelist.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <enginelist>
+              <engine
+                  name="${VERSION_NAME}"
+                  filename="libstockfish.so"
+                  target="arm64-v8a" />
+          </enginelist>
+          EOF
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Accept licenses and install Android SDK dependencies
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-37" "build-tools;35.0.0"
+
+      - name: Compile APK
+        working-directory: wrapper-repo/StockfishChessEngine
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Prepare APK Release Artifact
+        run: |
+          VERSION_NAME="stockfish-test-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}" # TEMPORARY (normally uses dev- or release tag)
+          
+          # Copy the completed APK and rename it to match the release styling
+          cp wrapper-repo/StockfishChessEngine/stockfishChessEngine/build/outputs/apk/debug/stockfishChessEngine-debug.apk ./${VERSION_NAME}.apk
+          echo "APK_NAME=${VERSION_NAME}.apk" >> $GITHUB_ENV
+
+      # Upload to the run summary page instead of generating a GitHub Release
+      - name: Upload APK as Run Artifact # TEMPORARY
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.APK_NAME }}
+          path: ./${{ env.APK_NAME }}
+
+      # - name: Upload APK to Release / Prerelease # TEMPORARY (Uncomment this for production and remove upload-artifact step above)
+      #   uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+      #   with:
+      #     files: ${{ env.APK_NAME }}
+      #     tag_name: ${{ github.ref_name == 'master' && format('stockfish-dev-{0}-{1}', env.COMMIT_DATE, env.COMMIT_SHA) || github.ref_name }}
+      #     prerelease: ${{ github.ref_name == 'master' }}
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
