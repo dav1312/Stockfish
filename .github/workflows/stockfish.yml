@@ -267,6 +267,9 @@ jobs:
           # 2. Add android:exported="true" to MainActivity for Android 12+ manifest validation requirements
           sed -i 's/android:name="com.kalab.chess.stockfishengine.MainActivity"/android:name="com.kalab.chess.stockfishengine.MainActivity"\n            android:exported="true"/g' wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/AndroidManifest.xml
 
+          # 3. Change category to LAUNCHER to show an app icon
+          sed -i 's/android.intent.category.DEFAULT/android.intent.category.LAUNCHER/g' wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/AndroidManifest.xml
+
       - name: Update engine list metadata
         run: |
           VERSION_NAME="Stockfish test-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}" # TEMPORARY (normally uses dev- or release tag)
