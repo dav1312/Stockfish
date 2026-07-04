@@ -257,6 +257,16 @@ jobs:
           rm -rf /usr/local/lib/android/sdk/ndk
           rm -rf /usr/local/lib/android/sdk/ndk-bundle
 
+      - name: Upgrade target SDK and fix manifest for Android 14+ compatibility
+        run: |
+          # 1. Update compile and target SDK versions to API 34 across build.gradle files
+          find wrapper-repo/StockfishChessEngine -name "build.gradle" -exec sed -i 's/compileSdkVersion 28/compileSdkVersion 34/g' {} +
+          find wrapper-repo/StockfishChessEngine -name "build.gradle" -exec sed -i 's/targetSdkVersion 28/targetSdkVersion 34/g' {} +
+          find wrapper-repo/StockfishChessEngine -name "build.gradle" -exec sed -i 's/buildToolsVersion "28.0.3"/buildToolsVersion "34.0.0"/g' {} +
+
+          # 2. Add android:exported="true" to MainActivity for Android 12+ manifest validation requirements
+          sed -i 's/android:name="com.kalab.chess.stockfishengine.MainActivity"/android:name="com.kalab.chess.stockfishengine.MainActivity"\n            android:exported="true"/g' wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/AndroidManifest.xml
+
       - name: Update engine list metadata
         run: |
           VERSION_NAME="Stockfish test-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}" # TEMPORARY (normally uses dev- or release tag)
@@ -282,7 +292,7 @@ jobs:
         run: |
           # Explicitly install SDK platforms and build tools to avoid build-environment conflicts
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-28" "build-tools;28.0.3"
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Set up JDK 11 (for Gradle compilation)
         uses: actions/setup-java@v4
