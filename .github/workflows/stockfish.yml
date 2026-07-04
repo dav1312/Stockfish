@@ -272,6 +272,26 @@ jobs:
           cp official_logo.png "$RES_DIR/drawable-xhdpi/ic_launcher.png"
           cp official_logo.png "$RES_DIR/drawable-xxhdpi/ic_launcher.png"
 
+      - name: Update MainActivity to show a helpful Toast message on launch
+        run: |
+          # Replace MainActivity Java code to trigger a helpful popup on launch rather than closing silently.
+          cat << 'EOF' > wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/java/com/kalab/chess/stockfishengine/MainActivity.java
+          package com.kalab.chess.stockfishengine;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.widget.Toast;
+
+          public class MainActivity extends Activity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  Toast.makeText(this, "Stockfish Engine ready. Please select this engine inside your Chess GUI settings.", Toast.LENGTH_LONG).show();
+                  finish();
+              }
+          }
+          EOF
+
       - name: Update engine list metadata
         run: |
           VERSION_NAME="Stockfish test-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}" # TEMPORARY (normally uses dev- or release tag)
