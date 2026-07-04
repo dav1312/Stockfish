@@ -225,25 +225,16 @@ jobs:
           name: android arm64-universal
           path: android-arm64
 
-      - name: Download compiled armv7 binary
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: android armv7-neon
-          path: android-armv7
-
       - name: Inject binaries into the Android project
         run: |
           TARGET_DIR="wrapper-repo/StockfishChessEngine/stockfishChessEngine/src/main/jniLibs"
           mkdir -p "$TARGET_DIR/arm64-v8a"
-          mkdir -p "$TARGET_DIR/armeabi-v7a"
 
-          # Copy and rename native binaries to libstockfish.so as required by the library provider
+          # Copy and rename native binary
           cp android-arm64/stockfish-android-arm64-universal "$TARGET_DIR/arm64-v8a/libstockfish.so"
-          cp android-armv7/stockfish-android-armv7-neon "$TARGET_DIR/armeabi-v7a/libstockfish.so"
 
-          # Set executable permissions on binaries
+          # Set executable permissions on binary
           chmod +x "$TARGET_DIR/arm64-v8a/libstockfish.so"
-          chmod +x "$TARGET_DIR/armeabi-v7a/libstockfish.so"
 
       - name: Disable Gradle native library stripping and hide NDK
         run: |
@@ -292,7 +283,7 @@ jobs:
               <engine
                   name="${VERSION_NAME}"
                   filename="libstockfish.so"
-                  target="armeabi-v7a|arm64-v8a" />
+                  target="arm64-v8a" />
           </enginelist>
           EOF
 
