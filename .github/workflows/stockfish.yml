@@ -8,7 +8,7 @@ on:
       - master
       - tools
       - github_ci
-      - test-apk-packaging-2 # TEMPORARY (Runs automatically on push to this branch)
+      - test-apk-packaging-3 # TEMPORARY (Runs automatically on push to this branch)
   pull_request:
     branches:
       - master
@@ -215,7 +215,7 @@ jobs:
 
       - name: Clone Chess Engine Support library
         run: |
-          git clone --depth 1 -b update https://github.com/dav1312/chessenginesupport-androidlib.git wrapper-repo
+          git clone --depth 1 -b update-2 https://github.com/dav1312/chessenginesupport-androidlib.git wrapper-repo
 
       - name: Download compiled arm64 binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
