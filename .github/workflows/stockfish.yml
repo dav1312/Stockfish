@@ -260,8 +260,23 @@ jobs:
         with:
           packages: "platforms;android-35 build-tools;35.0.0"
 
+      - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEY }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > wrapper-repo/StockfishChessEngine/stockfish.keystore
+            echo "SIGNING_KEY_FILE=../stockfish.keystore" >> $GITHUB_ENV
+          else
+            echo "WARNING: SIGNING_KEY secret is not set. Building with debug signature."
+          fi
+
       - name: Compile APK
         working-directory: wrapper-repo/StockfishChessEngine
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
