@@ -26,10 +26,24 @@ jobs:
           environmentVariableName: SDE_DIR
           sdeVersion: 9.58.0
 
+      - name: Check Git status before build
+        run: |
+          echo "=== BEFORE BUILD STATUS ==="
+          git status || true
+          echo "=== BEFORE BUILD DIFF ==="
+          git diff || true
+
       - name: Build universal binary
         run: |
           SDE_PATH=$(cygpath "$SDE_DIR")
           make -j4 -C src ARCH=x86-64-universal profile-build RUN_PREFIX="$SDE_PATH/sde.exe -future --"
+
+      - name: Check Git status after build
+        run: |
+          echo "=== AFTER BUILD STATUS ==="
+          git status || true
+          echo "=== AFTER BUILD DIFF ==="
+          git diff || true
 
       - name: Strip binary
         run: strip src/stockfish.exe
