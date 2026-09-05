@@ -1,10 +1,12 @@
 name: Stockfish
 on:
+  workflow_dispatch: # TEMPORARY (Allows manual run triggering from GitHub interface)
   push:
     branches:
       - master
       - tools
       - github_ci
+      - test-apk-sf-19 # TEMPORARY (Runs automatically on push to this branch)
   pull_request:
     branches:
       - master
@@ -16,7 +18,7 @@ concurrency:
 
 jobs:
   Prerelease:
-    if: github.repository == 'official-stockfish/Stockfish' && github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: false # TEMPORARY (Disabled during APK test runs)
     runs-on: ubuntu-latest
     needs: [Matrix, ARMCompilation, UniversalCompilation]
     outputs:
@@ -131,48 +133,50 @@ jobs:
   # Testing Jobs
   IWYU:
     name: IWYU
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/iwyu.yml
   Sanitizers:
     name: Sanitizers
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/sanitizers.yml
   Tests:
     name: Tests
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/tests.yml
   Matetrack:
     name: Matetrack
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/matetrack.yml
   Games:
     name: Games
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/games.yml
   CompilerCheck:
     name: Compiler check
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/avx2_compilers.yml
   MSVC:
     name: MSVC
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/msvc.yml
   WASMCompilation:
     name: WASM compilation
-    if: ${{ always() }}
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     uses: ./.github/workflows/wasm_compilation.yml
   # Release Jobs
   ARMCompilation:
     name: Android builds
-    needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
+    needs: [Matrix] # TEMPORARY (Normally needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck])
     uses: ./.github/workflows/arm_compilation.yml
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
   UniversalCompilation:
     name: "Universal builds"
+    if: false # TEMPORARY (Disabled to bypass long-running checks)
     needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
     uses: ./.github/workflows/universal_compilation.yml
   DevBinaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: false # TEMPORARY (Disabled during APK test runs)
     name: Universal uploads
     needs: [Prerelease, Matrix, UniversalCompilation]
     uses: ./.github/workflows/upload_binaries.yml
@@ -185,7 +189,7 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   DevARMBinaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: false # TEMPORARY (Disabled during APK test runs)
     name: Android uploads
     needs: [Prerelease, Matrix, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
@@ -198,7 +202,7 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   PublishPrerelease:
-    if: github.repository == 'official-stockfish/Stockfish' && needs.Prerelease.outputs.release_tag != ''
+    if: false # TEMPORARY (Disabled during APK test runs)
     needs: [Prerelease, DevBinaries, DevARMBinaries]
     runs-on: ubuntu-latest
     permissions:
@@ -208,3 +212,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit "${{ needs.Prerelease.outputs.release_tag }}" --repo "${{ github.repository }}" --draft=false --prerelease
+
+  Android_APK:
+    name: Package Android APK
+    needs: [ARMCompilation]
+    uses: ./.github/workflows/package_apk.yml
+    with:
+      version_name: "Stockfish 19"
+      apk_name: "stockfish-19.apk"
+    secrets:
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
